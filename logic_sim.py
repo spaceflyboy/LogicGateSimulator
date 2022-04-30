@@ -245,7 +245,7 @@ class GateLLNode():
     
     def to_string(self):
         gate_str = "" if self.gate is None else self.gate.to_string()
-        return f"GateLLNode {self.id} : Contains a {gate_str} gate"
+        return f"GateLLNode with ID {self.id} : Contains a {gate_str} gate"
 
 class CIRCUIT(LogicGate):
     def __init__(self):
@@ -261,8 +261,20 @@ class CIRCUIT(LogicGate):
             node.resetAllIDs()
         self.updated_IDs = False
     
-    def assign_r(self, root):
+    def assign_r(root, id):
+        root.setID(id)
+        id += 1
+        returnVal = id
+        idx = 0
+        children = root.getNexts()
         
+        for child in children
+            if idx == len(children)-1:
+                returnVal = assign_r(child, id)
+            else:
+                id = assign_r(child, id)
+            idx += 1
+        return returnVal
     
     def assignNodeIDs(self, input_gates):
         if self.updated_IDs:
@@ -271,8 +283,10 @@ class CIRCUIT(LogicGate):
             self.unassignNodeIDs(input_gates)
         
         cur_id = 0
+ 
         for node in input_gates:
-            next_id = assign_r(node, 0)
+            next_id = assign_r(node, cur_id)
+            cur_id = next_id
                     
                 
         self.updated_IDs = True

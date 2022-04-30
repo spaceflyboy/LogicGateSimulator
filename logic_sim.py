@@ -1,6 +1,11 @@
 import abc
 
-class LogicGate(object): # Abstract Base Class for Logic Gates
+# Abstract Base Class representing a logic gate
+# Abstract methods:
+#     pulse(...): Take in inputs and return the logic gate's output
+#     get_num_req_inputs(): Return the number of inputs this gate takes in (E.g. 1 for NOT, 2 for AND)
+#     to_string(): Return a string representation of the gate. E.g. \"AND\" for an AND gate.
+class LogicGate(object): 
     __metaclass__ = abc.ABCMeta
     
     @abc.abstractmethod
@@ -19,6 +24,12 @@ class LogicGate(object): # Abstract Base Class for Logic Gates
         # Provide a string representation of the gate. E.g. \"AND\" for an AND gate.
         return
 
+# Abstract Class which inherits from LogicGate and distinguishes UnaryGates as requiring only one input
+# Abstract methods:
+#     pulse(...): Take in inputs and return the logic gate's output
+#     to_string(): Return a string representation of the gate. E.g. \"AND\" for an AND gate.
+# Implemented methods:
+#     get_num_req_inputs(): Return the number of inputs this gate takes in (always 1)
 class UnaryGate(LogicGate):
     __metaclass__ = abc.ABCMeta
     
@@ -35,7 +46,13 @@ class UnaryGate(LogicGate):
         
     def get_num_req_inputs(self):
         return 1
-        
+
+# Abstract Class which inherits from LogicGate and distinguishes BinaryGates as requiring two inputs
+# Abstract methods:
+#     pulse(...): Take in inputs and return the logic gate's output
+#     to_string(): Return a string representation of the gate. E.g. \"AND\" for an AND gate.
+# Implemented methods:
+#     get_num_req_inputs(): Return the number of inputs this gate takes in (always 2)  
 class BinaryGate(LogicGate):
     __metaclass__ = abc.ABCMeta
     
@@ -53,6 +70,7 @@ class BinaryGate(LogicGate):
     def get_num_req_inputs(self):
         return 2
 
+# Concrete, derived class which represents a Buffer Gate
 class BUFFER(UnaryGate):
     def __init__(self):
         super().__init__()
@@ -61,6 +79,10 @@ class BUFFER(UnaryGate):
         assert isinstance(inputs[0], bool)
         return inputs[0]
         
+    def to_string():
+        return "BUFFER"
+
+# Concrete, derived class which represents a NOT Gate
 class NOT(UnaryGate):
     def __init__(self):
         super().__init__()
@@ -68,7 +90,11 @@ class NOT(UnaryGate):
     def pulse(self, inputs):
         assert isinstance(inputs[0], bool)
         return not inputs[0]
+        
+    def to_string():
+        return "NOT"
 
+# Concrete, derived class which represents an AND Gate
 class AND(BinaryGate):
     def __init__(self):
         super().__init__()
@@ -82,7 +108,11 @@ class AND(BinaryGate):
         in1 = inputs[0]
         in2 = inputs[1]
         return in1 and in2
+        
+    def to_string():
+        return "AND"
 
+# Concrete, derived class which represents an OR Gate
 class OR(BinaryGate):
     def __init__(self):
         super().__init__()
@@ -96,7 +126,11 @@ class OR(BinaryGate):
         in1 = inputs[0]
         in2 = inputs[1]
         return in1 or in2
+        
+    def to_string():
+        return "OR"
 
+# Concrete, derived class which represents an XOR Gate
 class XOR(BinaryGate):
     def __init__(self):
         super().__init__()
@@ -110,7 +144,11 @@ class XOR(BinaryGate):
         in1 = inputs[0]
         in2 = inputs[1]
         return in1 ^ in2
+        
+    def to_string():
+        return "XOR"
 
+# Concrete, derived class which represents a NAND Gate
 class NAND(BinaryGate):
     def __init__(self):
         super().__init__()
@@ -125,7 +163,10 @@ class NAND(BinaryGate):
         in2 = inputs[1]
         return not (in1 and in2)
         
-
+    def to_string():
+        return "NAND"
+        
+# Concrete, derived class which represents a NOR Gate
 class NOR(BinaryGate):
     def __init__(self):
         super().__init__()
@@ -140,6 +181,10 @@ class NOR(BinaryGate):
         in2 = inputs[1]
         return not (in1 or in2)
         
+    def to_string():
+        return "NOR"
+
+# Concrete, derived class which represents an XNOR Gate
 class XNOR(BinaryGate):
     def __init__(self):
         super().__init__()
@@ -153,6 +198,9 @@ class XNOR(BinaryGate):
         in1 = inputs[0]
         in2 = inputs[1]
         return not (in1 ^ in2)
+        
+    def to_string():
+        return "XNOR"
 
 class GateLLNode():
     def __init__(self):
@@ -170,7 +218,6 @@ class GateLLNode():
         assert isinstance(self.prevs, list)
         assert isinstance(self.gate, LogicGate)
         assert isinstance(self.id, int)
-
     
     def __init__(self, nexts, gate, id):
         self.nexts = nexts
@@ -256,8 +303,8 @@ class CIRCUIT(LogicGate):
     def getInputNodes(self):
         return self.input_gates
         
-    def unassignNodeIDs(self, input_gates):
-        for node in input_gates:
+    def unassignNodeIDs(self):
+        for node in self.input_gates:
             node.resetAllIDs()
         self.updated_IDs = False
     
@@ -276,18 +323,17 @@ class CIRCUIT(LogicGate):
             idx += 1
         return returnVal
     
-    def assignNodeIDs(self, input_gates):
+    def assignNodeIDs(self):
         if self.updated_IDs:
             return
         else:
-            self.unassignNodeIDs(input_gates)
+            self.unassignNodeIDs()
         
         cur_id = 0
  
-        for node in input_gates:
+        for node in self.input_gates:
             next_id = assign_r(node, cur_id)
-            cur_id = next_id
-                    
+            cur_id = next_id             
                 
         self.updated_IDs = True
     
@@ -301,7 +347,6 @@ class CIRCUIT(LogicGate):
         assert index >= 0
         assert index < len(self.input_gates)
         self.input_gates.pop(index)
-        
     
     def get_num_req_inputs(self):
         input_requirement_count = 0
@@ -319,11 +364,11 @@ class CIRCUIT(LogicGate):
             assert isinstance(inputs, list)
             assert self.get_num_req_inputs() == len(inputs)
             
-            self.assignNodeID
+            self.assignNodeIDs() # ID every Node se we can detect overlaps between each input node's general tree
             # Our underlying circuit actually has gates that take inputs and we have been supplied enough of them
                     
             for node in input_gates:
-            
+                
             
                 try:
                     return input_gates.pulse(inputs)
@@ -334,6 +379,9 @@ class CIRCUIT(LogicGate):
                     print(f"P
                     
         raise Exception("This circuit has no input gates, cannot pulse it.")
+        
+    def to_string():
+        return "CIRCUIT"
         
 """
 class CompoundCircuit:

@@ -348,6 +348,7 @@ class CIRCUIT(LogicGate):
         assert index < len(self.input_gates)
         self.input_gates.pop(index)
     
+    """
     def get_num_req_inputs(self):
         input_requirement_count = 0
         for node in self.input_gates:
@@ -358,14 +359,49 @@ class CIRCUIT(LogicGate):
                 print(f"CIRCUIT.get_num_req_inputs caught the following exception: {e}")
                 raise e
         return input_requirement_count
+    """
+    
+    # Helper method for preprecess_input_hierarchy(...)
+    def __find_input_overlap_r(input_gate, cur_gate, input_ids, overlaps=[]):
+        #if input_gate.getID() == cur_gate.getID():
+        
+        assert overlaps is not None
+        if input_get.getNexts():
+            for child in input_gate.getNexts():
+                if child.getID() in input_ids_c and child.getID() != input_gate.getID():
+                    overlaps.append(child)
+                    input_ids.remove(child.getID())
+        
+            nexts = input_gate.getNexts()
+            i = 0
+            while i < len(nexts) and len(input_ids) > 0:
+                child = nexts[i]
+                find_input_overlap_r(input_gate, child, input_ids, overlaps)
+            
+        
+        return overlaps
+            
     
     # Helper method for CIRCUIT.pulse(...) which will sort out relationships between multiple input gates
     # Inputs:
     #     input_gates: List of input GateNodes which contain connections to all of the subsequent gate nodes.
+    #     inputs: inputs to CIRCUIT.pulse(...) which will help us preprocess overlapping circuit structures
     # Outputs:
-    def preprocess_input_hieararchy(self, input_gates):
+    #     list of processed input gates. If input gates exist in a hierarchy, we will pulse through using inputs
+    def __preprocess_input_hieararchy(input_gates, inputs):
         input_ids = [gate.getID() for gate in input_gates] 
+        overlappings = []
+        for i in range(len(input_gates)):
+            input_ids_sacrifice = input_ids.copy()
+            overlaps = __find_input_overlap_r(inpute_gates[i], input_gates[i], input_ids_sacrifice)
+            overlappings.append(overlaps)
         
+        idx = 0
+        for overlaps in overlappings:
+            input_id = input_ids[idx]
+            input_node = input_gates[idx]
+            
+            idx += 1
         
     
     # Helper method for CIRCUIT.pulse which will find intersections.
@@ -373,7 +409,7 @@ class CIRCUIT(LogicGate):
     #     input_gates: List of input GateNodes which contain connections to all of the subsequent gate nodes.
     # Outputs:
     #     list of IDs at which input gates intersect and a tuple of input_gates which intersect at that point 
-    def find_intersections(self, input_gates):
+    def __find_intersections(input_gates):
         intersections = []
         visited_nodes = {}
         
@@ -405,7 +441,9 @@ class CIRCUIT(LogicGate):
             # Our underlying circuit actually has gates that take inputs and we have been supplied enough of them
             assert self.updated_IDs
             
-            intersection_points = self.find_intersections(self.input_gates)
+            input_gates_processed = __preprocess_input_hieararchy(self.input_gates, inputs)
+            
+            intersection_points = __find_intersections(self.input_gates)
             
             for node in input_gates:
                 

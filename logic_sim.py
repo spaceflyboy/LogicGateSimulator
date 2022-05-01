@@ -202,7 +202,7 @@ class XNOR(BinaryGate):
     def to_string():
         return "XNOR"
 
-class GateLLNode():
+class GateNode():
     def __init__(self):
         self.gate = None
         self.nexts = []
@@ -283,7 +283,7 @@ class GateLLNode():
         
     def pulse(self, inputs):
         if self.gate is None: 
-            raise Exception("Cannot pulse this GateLLNode because it doesn't contain a gate")
+            raise Exception("Cannot pulse this GateNode because it doesn't contain a gate")
         try:
             return self.gate.pulse(inputs)
         except AssertionError as e:
@@ -292,13 +292,13 @@ class GateLLNode():
     
     def to_string(self):
         gate_str = "" if self.gate is None else self.gate.to_string()
-        return f"GateLLNode with ID {self.id} : Contains a {gate_str} gate"
+        return f"GateNode with ID {self.id} : Contains a {gate_str} gate"
 
 class CIRCUIT(LogicGate):
     def __init__(self):
         super().__init__()
         self.input_gates = []
-        self.updated_IDs = False
+        self.updated_IDs = False    
     
     def getInputNodes(self):
         return self.input_gates
@@ -338,7 +338,7 @@ class CIRCUIT(LogicGate):
         self.updated_IDs = True
     
     def addInputNode(self, node):
-        assert isinstance(node, GateLLNode)
+        assert isinstance(node, GateNode)
         self.input_gates.append(node)
         self.updated_IDs = False
         
@@ -351,13 +351,50 @@ class CIRCUIT(LogicGate):
     def get_num_req_inputs(self):
         input_requirement_count = 0
         for node in self.input_gates:
-            assert isinstance(node, GateLLNode)
+            assert isinstance(node, GateNode)
             try:
                 input_requirement_count += node.get_num_req_inputs()
             except Exception as e:
                 print(f"CIRCUIT.get_num_req_inputs caught the following exception: {e}")
                 raise e
         return input_requirement_count
+    
+    # Helper method for CIRCUIT.pulse(...) which will sort out relationships between multiple input gates
+    # Inputs:
+    #     input_gates: List of input GateNodes which contain connections to all of the subsequent gate nodes.
+    # Outputs:
+    def preprocess_input_hieararchy(self, input_gates):
+        input_ids = [gate.getID() for gate in input_gates] 
+        
+        
+    
+    # Helper method for CIRCUIT.pulse which will find intersections.
+    # Inputs:
+    #     input_gates: List of input GateNodes which contain connections to all of the subsequent gate nodes.
+    # Outputs:
+    #     list of IDs at which input gates intersect and a tuple of input_gates which intersect at that point 
+    def find_intersections(self, input_gates):
+        intersections = []
+        visited_nodes = {}
+        
+        cur_layer = None
+        input_idx = 0
+        for node in input_gates:
+            id = node.getID()
+            assert id != -1
+            if id in visited_nodes:
+                # Intersection found
+                visited_nodes[id] += (input_idx, )           
+            else:
+                # If it is an intersection, we won't find out on this iteration
+                visited_nodes[id] = (input_idx, )
+            cur_layer = node.getNexts()
+            for i in range(len(cur_layer)):
+                
+            input_idx += 1
+                
+            
+        return intersections
     
     def pulse(self, inputs):
         if self.input_gates:
@@ -366,7 +403,10 @@ class CIRCUIT(LogicGate):
             
             self.assignNodeIDs() # ID every Node se we can detect overlaps between each input node's general tree
             # Our underlying circuit actually has gates that take inputs and we have been supplied enough of them
-                    
+            assert self.updated_IDs
+            
+            intersection_points = self.find_intersections(self.input_gates)
+            
             for node in input_gates:
                 
             
@@ -376,7 +416,8 @@ class CIRCUIT(LogicGate):
                     print(f"CIRCUIT.pulse(): Passing in that input tripped this assertion: {e}")
                     raise e
                 except Exception as e:
-                    print(f"P
+                    print(f"CIRCUIT.pulse(): Caught the following exception: {e}")
+                    raise e
                     
         raise Exception("This circuit has no input gates, cannot pulse it.")
         

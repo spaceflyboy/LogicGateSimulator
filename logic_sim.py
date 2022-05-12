@@ -206,12 +206,12 @@ class GateNode():
     def __init__(self):
         self.gate = None
         self.nexts = []
-        #self.prevs = []
+        self.prevs = []
         self.id = -1
     
-    def __init__(self, nexts, gate):
+    def __init__(self, nexts, gate, prevs=[]):
         self.nexts = nexts
-        #self.prevs = prevs
+        self.prevs = prevs
         self.gate = gate
         self.id = -1
         assert isinstance(self.nexts, list)
@@ -219,13 +219,13 @@ class GateNode():
         assert isinstance(self.gate, LogicGate)
         assert isinstance(self.id, int)
     
-    def __init__(self, nexts, gate, id):
+    def __init__(self, nexts, gate, id, prevs=[]):
         self.nexts = nexts
-        #self.prevs = prevs
+        self.prevs = prevs
         self.gate = gate
         self.id = id
         assert isinstance(self.nexts, list)
-        #assert isinstance(self.prevs, list)
+        assert isinstance(self.prevs, list)
         assert isinstance(self.gate, LogicGate)
         assert isinstance(self.id, int)
         assert self.id >= 0
@@ -249,30 +249,29 @@ class GateNode():
     def addNext(self, next):
         self.nexts.append(next)
         
-    """
     def addPrev(self, prev):
         self.prevs.append(prev)
-    """
     
     def removeNext(self, next_index):
         assert next_index < len(self.nexts)
         assert next index >= 0
         return self.nexts.pop(next_index)
     
-    """
     def removePrev(self, prev_index):
         assert prev_index < len(self.prevs)
         assert prev_index >= 0
         return self.prevs.pop(prev_index)
-    """
+
     
     def getNexts(self):
         return self.nexts
-    
-    """
+        
     def getPrevs(self):
         return self.prevs
-    """
+    
+    def hasPrevs(self)
+        return bool(self.prevs)
+    
     def setGate(self, gate):
         self.gate = gate
         

@@ -370,7 +370,7 @@ class CIRCUIT(LogicGate):
                 raise e
         return input_requirement_count
     """
-    
+    """
     # Helper method for preprecess_input_hierarchy(...)
     def __find_input_overlap_r(input_gate, cur_gate, input_ids, overlaps=[]):
         #if input_gate.getID() == cur_gate.getID():
@@ -390,8 +390,8 @@ class CIRCUIT(LogicGate):
             
         
         return overlaps
-            
-    
+    """   
+    """
     # Helper method for CIRCUIT.pulse(...) which will sort out relationships between multiple input gates
     # Inputs:
     #     input_gates: List of input GateNodes which contain connections to all of the subsequent gate nodes.
@@ -412,8 +412,8 @@ class CIRCUIT(LogicGate):
             input_node = input_gates[idx]
             
             idx += 1
-        
-    
+    """   
+    """
     # Helper method for CIRCUIT.pulse which will find intersections.
     # Inputs:
     #     input_gates: List of input GateNodes which contain connections to all of the subsequent gate nodes.
@@ -441,7 +441,7 @@ class CIRCUIT(LogicGate):
                 
             
         return intersections
-    
+    """
     def pulse(self, inputs):
         if self.input_gates:
             assert isinstance(inputs, list)
@@ -451,9 +451,9 @@ class CIRCUIT(LogicGate):
             # Our underlying circuit actually has gates that take inputs and we have been supplied enough of them
             assert self.updated_IDs
             
-            input_gates_processed = __preprocess_input_hieararchy(self.input_gates, inputs)
+            #input_gates_processed = __preprocess_input_hieararchy(self.input_gates, inputs)
             
-            intersection_points = __find_intersections(self.input_gates)
+            #intersection_points = __find_intersections(self.input_gates)
             
             for node in input_gates_processed:
                 
@@ -485,28 +485,52 @@ class CIRCUIT(LogicGate):
             pop_out_r(input_gate, added_ids)
         self.output_gates = added_ids.values()
         assert bool(self.output_gates) or (not bool(self.input_gates) and not bool(self.output_gates))
-            
+         
+    def back_r(node, inputs, inpt_idx):
+        # PROBLEM:
+        # We have to guarantee that the list of input gates and inputs are given such that
+        # every circuit is regularized to take in their direct inputs before other input gate outputs
+        num_prevs = 0
+        direct_inputs = []
+        if node.hasPrevs():
+            prevs = node.getPrevs()
+            num_prevs = len(prevs)
+            num_direct_inputs = node.get_num_req_inputs() - num_prevs
+        direct_inputs = inputs[input_idx[0]:input_idx[0]+num_direct_inputs]
+        input_idx[0] += num_direct_inputs
+        for prev in prevs:
+            direct_inputs.append(back_r(prev, inputs, inpt_idx))
+                
+        try:
+            return node.pulse(direct_inputs)
+        except AssertionError as e:
+            print(f"CIRCUIT.pulse(): Passing in that input tripped this assertion: {e}")
+            raise e
+        except Exception as e:
+            print(f"CIRCUIT.pulse(): Caught the following exception: {e}")
+            raise e    
         
     def backwards(self, inputs):
-        assert isinstance(inputs, list)
-        assert self.get_num_req_inputs() == len(inputs)
+        if self.input_gates:
+            assert isinstance(inputs, list)
+            assert self.get_num_req_inputs() == len(inputs)
+                
+            self.assignNodeIDs() # ID every Node se we can detect overlaps between each input node's general tree
+            # Our underlying circuit actually has gates that take inputs and we have been supplied enough of them
+            assert self.updated_IDs
+            self.populate_output_gates()
+            assert bool(self.output_gates)
             
-        self.assignNodeIDs() # ID every Node se we can detect overlaps between each input node's general tree
-        # Our underlying circuit actually has gates that take inputs and we have been supplied enough of them
-        assert self.updated_IDs
-        self.populate_output_gates()
-        assert bool(self.output_gates)
-        
-        for output_gate in self.output_gates:
-            
+            inpt_idx = [0]
+            outputs = []
+            for output_gate in self.output_gates:
+                outputs.append(back_r(output_gate), inpt_idx)
+                
+            return outputs
+        raise Exception("This circuit has no input gates, cannot pulse it.")
     
     def to_string():
-        return "CIRCUIT"
-        
-"""
-class CompoundCircuit:
-"""        
-    
+        return "CIRCUIT"    
 
 def main():
     return

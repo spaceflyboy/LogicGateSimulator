@@ -469,13 +469,22 @@ class CIRCUIT(LogicGate):
                     
         raise Exception("This circuit has no input gates, cannot pulse it.")
         
-    def pop_out_r(input_gate, added_ids):
-        
-        
+    def pop_out_r(node, added_ids):
+        if node.hasNexts():
+            for next_gate in node.getNexts():
+                pop_out_r(next_gate, added_ids)
+        else:
+            cur_id = node.getID()
+            if cur_id not in added_ids:
+                added_ids[cur_id] = node
+                
         
     def populate_output_gates(self):
         added_ids = {}
         for input_gate in self.input_gates:
+            pop_out_r(input_gate, added_ids)
+        self.output_gates = added_ids.values()
+        assert bool(self.output_gates) or (not bool(self.input_gates) and not bool(self.output_gates))
             
         
     def backwards(self, inputs):
@@ -487,6 +496,9 @@ class CIRCUIT(LogicGate):
         assert self.updated_IDs
         self.populate_output_gates()
         assert bool(self.output_gates)
+        
+        for output_gate in self.output_gates:
+            
     
     def to_string():
         return "CIRCUIT"

@@ -261,7 +261,6 @@ class GateNode():
         assert prev_index < len(self.prevs)
         assert prev_index >= 0
         return self.prevs.pop(prev_index)
-
     
     def getNexts(self):
         return self.nexts
@@ -269,8 +268,11 @@ class GateNode():
     def getPrevs(self):
         return self.prevs
     
-    def hasPrevs(self)
+    def hasPrevs(self):
         return bool(self.prevs)
+        
+    def hasNexts(self):
+        return bool(self.nexts)
     
     def setGate(self, gate):
         self.gate = gate
@@ -297,10 +299,19 @@ class CIRCUIT(LogicGate):
     def __init__(self):
         super().__init__()
         self.input_gates = []
+        self.output_gates = []
         self.updated_IDs = False    
+        
+    def __init__(self, input_gates, output_gates=[]):
+        self.input_gates = []
+        self.output_gates = []
+        self.updated_IDs = False
     
     def getInputNodes(self):
         return self.input_gates
+        
+    def getOutputNodes(self):
+        return self.output_gates
         
     def unassignNodeIDs(self):
         for node in self.input_gates:
@@ -444,7 +455,7 @@ class CIRCUIT(LogicGate):
             
             intersection_points = __find_intersections(self.input_gates)
             
-            for node in input_gates:
+            for node in input_gates_processed:
                 
             
                 try:
@@ -458,6 +469,25 @@ class CIRCUIT(LogicGate):
                     
         raise Exception("This circuit has no input gates, cannot pulse it.")
         
+    def pop_out_r(input_gate, added_ids):
+        
+        
+        
+    def populate_output_gates(self):
+        added_ids = {}
+        for input_gate in self.input_gates:
+            
+        
+    def backwards(self, inputs):
+        assert isinstance(inputs, list)
+        assert self.get_num_req_inputs() == len(inputs)
+            
+        self.assignNodeIDs() # ID every Node se we can detect overlaps between each input node's general tree
+        # Our underlying circuit actually has gates that take inputs and we have been supplied enough of them
+        assert self.updated_IDs
+        self.populate_output_gates()
+        assert bool(self.output_gates)
+    
     def to_string():
         return "CIRCUIT"
         

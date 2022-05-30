@@ -20,7 +20,7 @@ class LogicGate(object):
         return
     
     @abc.abstractmethod
-    def to_string():
+    def to_string(self):
         # Provide a string representation of the gate. E.g. \"AND\" for an AND gate.
         return
 
@@ -40,7 +40,7 @@ class UnaryGate(LogicGate):
         return
     
     @abc.abstractmethod
-    def to_string():
+    def to_string(self):
         # Provide a string representation of the gate. E.g. \"AND\" for an AND gate.
         return
         
@@ -63,7 +63,7 @@ class BinaryGate(LogicGate):
         return
     
     @abc.abstractmethod
-    def to_string():
+    def to_string(self):
         # Provide a string representation of the gate. E.g. \"AND\" for an AND gate.
         return
         
@@ -79,7 +79,7 @@ class BUFFER(UnaryGate):
         assert isinstance(inputs[0], bool)
         return inputs[0]
         
-    def to_string():
+    def to_string(self):
         return "BUFFER"
 
 # Concrete, derived class which represents a NOT Gate
@@ -91,7 +91,7 @@ class NOT(UnaryGate):
         assert isinstance(inputs[0], bool)
         return not inputs[0]
         
-    def to_string():
+    def to_string(self):
         return "NOT"
 
 # Concrete, derived class which represents an AND Gate
@@ -109,7 +109,7 @@ class AND(BinaryGate):
         in2 = inputs[1]
         return in1 and in2
         
-    def to_string():
+    def to_string(self):
         return "AND"
 
 # Concrete, derived class which represents an OR Gate
@@ -127,7 +127,7 @@ class OR(BinaryGate):
         in2 = inputs[1]
         return in1 or in2
         
-    def to_string():
+    def to_string(self):
         return "OR"
 
 # Concrete, derived class which represents an XOR Gate
@@ -145,7 +145,7 @@ class XOR(BinaryGate):
         in2 = inputs[1]
         return in1 ^ in2
         
-    def to_string():
+    def to_string(self):
         return "XOR"
 
 # Concrete, derived class which represents a NAND Gate
@@ -163,7 +163,7 @@ class NAND(BinaryGate):
         in2 = inputs[1]
         return not (in1 and in2)
         
-    def to_string():
+    def to_string(self):
         return "NAND"
         
 # Concrete, derived class which represents a NOR Gate
@@ -181,7 +181,7 @@ class NOR(BinaryGate):
         in2 = inputs[1]
         return not (in1 or in2)
         
-    def to_string():
+    def to_string(self):
         return "NOR"
 
 # Concrete, derived class which represents an XNOR Gate
@@ -203,32 +203,22 @@ class XNOR(BinaryGate):
         return "XNOR"
 
 class GateNode():
-    def __init__(self):
-        self.gate = None
-        self.nexts = []
-        self.prevs = []
-        self.id = -1
-    
-    def __init__(self, nexts, gate, prevs=[]):
+    def __init__(self, gate=None, nexts=[], prevs=[]):
+        self.gate = gate
         self.nexts = nexts
         self.prevs = prevs
-        self.gate = gate
         self.id = -1
+        self.reset = True
         assert isinstance(self.nexts, list)
         assert isinstance(self.prevs, list)
         assert isinstance(self.gate, LogicGate)
         assert isinstance(self.id, int)
     
-    def __init__(self, nexts, gate, id, prevs=[]):
-        self.nexts = nexts
-        self.prevs = prevs
+    def isReset(self):
+        return self.reset
+        
+    def setGate(self, gate):
         self.gate = gate
-        self.id = id
-        assert isinstance(self.nexts, list)
-        assert isinstance(self.prevs, list)
-        assert isinstance(self.gate, LogicGate)
-        assert isinstance(self.id, int)
-        assert self.id >= 0
     
     def getID(self):
         return self.id
@@ -236,28 +226,45 @@ class GateNode():
     def setID(self, id):
         assert isinstance(id, int)
         assert id >= 0
+        self.reset = False
         self.id = id
     
     def resetAllIDs(self):
         self.resetID()
         for child in self.nexts:
-            child.resetAllIDs()
+            if not child.isReset():
+                child.resetAllIDs()
     
     def resetID(self):
         self.id = -1
+        self.reset = True
     
     def addNext(self, next):
+        self.resetID()
         self.nexts.append(next)
         
     def addPrev(self, prev):
+        self.resetID()
         self.prevs.append(prev)
+        
+    def add_connect_next(self, next):
+        self.resetID()
+        self.nexts.append(next)
+        next.addPrev(self)
+    
+    def add_connect_prev(self, prev):
+        self.resetID()
+        self.prevs.append(prev)
+        prev.addNext(self)
     
     def removeNext(self, next_index):
+        self.resetID()
         assert next_index < len(self.nexts)
-        assert next index >= 0
+        assert next_index >= 0
         return self.nexts.pop(next_index)
     
     def removePrev(self, prev_index):
+        self.resetID()
         assert prev_index < len(self.prevs)
         assert prev_index >= 0
         return self.prevs.pop(prev_index)
@@ -292,8 +299,22 @@ class GateNode():
             raise e
     
     def to_string(self):
-        gate_str = "" if self.gate is None else self.gate.to_string()
+        gate_str = "NULL" if self.gate is None else self.gate.to_string()
         return f"GateNode with ID {self.id} : Contains a {gate_str} gate"
+
+    def assign_r(self, id):
+        self.setID(id)
+        print(f"assign_r: node {self.to_string()}")
+        id += 1
+
+        idx = 0
+        children = self.getNexts()
+        
+        for child in children:
+            if not child.isReset():
+                id = child.assign_r(id)
+            idx += 1
+        return id
 
 class CIRCUIT(LogicGate):
     def __init__(self):
@@ -303,8 +324,9 @@ class CIRCUIT(LogicGate):
         self.updated_IDs = False    
         
     def __init__(self, input_gates, output_gates=[]):
-        self.input_gates = []
-        self.output_gates = []
+        super().__init__()
+        self.input_gates = input_gates
+        self.output_gates = output_gates
         self.updated_IDs = False
     
     def getInputNodes(self):
@@ -317,22 +339,7 @@ class CIRCUIT(LogicGate):
         for node in self.input_gates:
             node.resetAllIDs()
         self.updated_IDs = False
-    
-    def assign_r(root, id):
-        root.setID(id)
-        id += 1
-        returnVal = id
-        idx = 0
-        children = root.getNexts()
         
-        for child in children
-            if idx == len(children)-1:
-                returnVal = assign_r(child, id)
-            else:
-                id = assign_r(child, id)
-            idx += 1
-        return returnVal
-    
     def assignNodeIDs(self):
         if self.updated_IDs:
             return
@@ -342,7 +349,7 @@ class CIRCUIT(LogicGate):
         cur_id = 0
  
         for node in self.input_gates:
-            next_id = assign_r(node, cur_id)
+            next_id = node.assign_r(cur_id)
             cur_id = next_id             
                 
         self.updated_IDs = True
@@ -442,6 +449,7 @@ class CIRCUIT(LogicGate):
             
         return intersections
     """
+    """
     def pulse(self, inputs):
         if self.input_gates:
             assert isinstance(inputs, list)
@@ -468,7 +476,8 @@ class CIRCUIT(LogicGate):
                     raise e
                     
         raise Exception("This circuit has no input gates, cannot pulse it.")
-        
+    """
+    
     def pop_out_r(node, added_ids):
         if node.hasNexts():
             for next_gate in node.getNexts():
@@ -510,12 +519,13 @@ class CIRCUIT(LogicGate):
             print(f"CIRCUIT.pulse(): Caught the following exception: {e}")
             raise e    
         
-    def backwards(self, inputs):
+    def pulse(self, inputs):
         if self.input_gates:
             assert isinstance(inputs, list)
-            assert self.get_num_req_inputs() == len(inputs)
-                
-            self.assignNodeIDs() # ID every Node se we can detect overlaps between each input node's general tree
+            #assert self.get_num_req_inputs() == len(inputs)
+            
+            if not self.updated_IDs:
+                self.assignNodeIDs() # ID every Node se we can detect overlaps between each input node's general tree
             # Our underlying circuit actually has gates that take inputs and we have been supplied enough of them
             assert self.updated_IDs
             self.populate_output_gates()
@@ -532,8 +542,120 @@ class CIRCUIT(LogicGate):
     def to_string():
         return "CIRCUIT"    
 
+"""
+def str_proc_r(substring):
+    char_ptr = 0
+    while char_ptr < len(string):
+        if string[char_ptr] == "G": #Gate scope
+            begin_scope_idx = string[char_ptr:].find("(")
+            assert begin_scope_idx != -1
+            gate_info = string[char_ptr:begin_scope_idx].split("_")
+            if len(gate_info) == 3: # ID included
+            elif len(gate_info) == 2: # No ID (Unique gate, so it shouldn't matter anyway)
+            else:
+                raise Exception(f"{__name__}: Retrieved gate info that doesn't make any sense. ")
+        elif string[char_ptr] == "C": #Circuit scope
+            circuit_begin_scope = string[char_ptr:].find("(")
+            assert circuit_begin_scope != -1
+            circuit_ID = string[char_ptr:circuit_begin_scope].split("_")
+            
+            if len(circuit_ID) == 2:
+                assert circuit_ID[0] == "C"
+            elif len(circuit_ID) == 1: # No circuit ID, so this is the only circuit object.
+                assert circuit_ID[0] == "C" 
+                circuit_ID.append("0")
+            else:
+                raise Exception(f"{__name__}: Retrieved circuit ID info that isn't the correct length. Should be of the form \"C_ID\"")
+                
+            parens_count = 1
+            temp_char_ptr = circuit_begin_scope+1
+            while parens_count != 0:
+                if temp_char_ptr > len(string):
+                    raise Exception(f"{__name__}: Exceeded string length in Circuit Scope trace. Most likely unmatched parentheses or some other input malformation has caused this.")
+                if string[temp_char_ptr] == "(":
+                    parens_count += 1
+                elif string[temp_char_ptr] == ")":
+                    parens_count -= 1
+                    if parens_count == 0:
+                        break
+
+                temp_char_ptr += 1
+            circuit_end_scope = temp_char_ptr
+               
+            gates = string[circuit_begin_scope+1:circuit_end_scope].split(", ")    
+            
+    
+
+def string_to_circuit(string, gate_codes):
+    char_ptr = 0
+    created_circuit = None
+    
+            
+            
+
+        else: #input
+        
+    return created_circuit
+"""
+import random
+
 def main():
+    # Test based on included "schema-wip" diagram
+    num_inputs = 6
+    inputs = []
+    for i in range(num_inputs):
+        inputs.append(bool(random.getrandbits(1)))
+        
+    print(f"Circuit Pulse Test: Using Randomly Generated Inputs {inputs}")
+        
+    gate_6 = GateNode()
+    gate_6.setGate(AND())
+    
+    gate_5 = GateNode()
+    gate_5.setGate(NOT())
+    
+    gate_3 = GateNode()
+    gate_3.setGate(NOT())
+    
+    gate_4 = GateNode()
+    gate_4.setGate(OR())
+    
+    gate_2 = GateNode()
+    gate_2.setGate(XOR())
+    
+    gate_1 = GateNode()
+    gate_1.setGate(NAND())
+    
+    gate_7 = GateNode()
+    gate_7.setGate(AND())
+    
+    gate_8 = GateNode()
+    gate_8.setGate(AND())
+    
+    gate_9 = GateNode()
+    gate_9.setGate(OR())
+    
+    input_gates = [gate_6, gate_8, gate_9, gate_7]
+    
+    gate_6.add_connect_next(gate_5)
+    gate_5.add_connect_next(gate_3)
+    gate_5.add_connect_next(gate_4)
+    gate_3.add_connect_next(gate_2)
+    gate_4.add_connect_next(gate_2)
+    gate_2.add_connect_next(gate_1)
+    
+    gate_8.add_connect_next(gate_4)
+    gate_8.add_connect_next(gate_7)
+    gate_7.add_connect_next(gate_1)
+    
+    gate_9.add_connect_next(gate_8)
+    
+    
+    circuit = CIRCUIT(input_gates)
+    outputs = circuit.pulse(inputs)
+    print(f"Circuit Output: {outputs[0]}")
+    
     return
 
-if __name__ == "__main__:
+if __name__ == "__main__":
     main()

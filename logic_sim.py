@@ -243,7 +243,7 @@ class GateNode:
         self.prevs.append(prev)
         
     def add_connect_next(self, next_):
-        print("add_connect_next called")
+        #print("add_connect_next called")
         self.resetID()
         self.nexts.append(next_)
         next_.addPrev(self)
@@ -318,15 +318,15 @@ class GateNode:
             visited = []
             
         if not self.getID() in visited:
-            print(self.getID())
-            print(len(self.getNexts()))
+            #print(self.getID())
+            #print(len(self.getNexts()))
             visited.append(self.getID())
             if self.hasNexts():
                 nexts = self.getNexts()
                 for next_gate in nexts:
                     next_gate.pop_out_r(added_ids, visited)
             else:
-                print("*")
+                #print("*")
                 cur_id = self.getID()
                 if cur_id not in added_ids:
                     added_ids[cur_id] = self
@@ -488,9 +488,15 @@ class CIRCUIT(LogicGate):
             
             assert self.get_num_req_inputs() == len(inputs)
             
+            
+            
             input_idx = [0]
             outputs = []
             for output_gate in self.output_gates:
+                s = "None"
+                if bool(output_gate.getGate()):
+                    s = output_gate.getGate().to_string()
+                print(f"pulse: output_gate({output_gate.getID()}): {s} type gate")
                 outputs.append(self.back_r(output_gate, inputs, input_idx))
                 
             return outputs

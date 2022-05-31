@@ -207,6 +207,9 @@ class GateNode:
         
     def setGate(self, gate):
         self.gate = gate
+        
+    def getGate(self):
+        return self.gate
     
     def getID(self):
         return self.ID
@@ -463,7 +466,7 @@ class CIRCUIT(LogicGate):
     def pulse(self, inputs):
         if self.input_gates:
             assert isinstance(inputs, list)
-            #assert self.get_num_req_inputs() == len(inputs)
+            
             
             if not self.updated_IDs:
                 self.assignNodeIDs() # ID every Node se we can detect overlaps between each input node's general tree
@@ -471,6 +474,8 @@ class CIRCUIT(LogicGate):
             assert self.updated_IDs
             self.populate_output_gates()
             assert bool(self.output_gates)
+            
+            assert self.get_num_req_inputs() == len(inputs)
             
             input_idx = [0]
             outputs = []
@@ -576,8 +581,6 @@ def main():
     gate_9 = GateNode()
     gate_9.setGate(OR())
     
-    input_gates = [gate_6, gate_8, gate_9, gate_7]
-    
     gate_6.add_connect_next(gate_5)
     gate_5.add_connect_next(gate_3)
     gate_5.add_connect_next(gate_4)
@@ -594,8 +597,13 @@ def main():
     gates = [gate_1, gate_2, gate_3, gate_4, gate_5, gate_6, gate_7, gate_8, gate_9]
     idx = 1
     for gate in gates:
-        print(f"main(): gate #{idx} (ID {gate.getID()}) has: {len(gate.getNexts())} nexts, {len(gate.getPrevs())} prevs")
+        s = "None"
+        if gate.getGate():
+            s = gate.getGate().to_string()
+        print(f"main(): gate #{idx} (ID {gate.getID()}, type {s}) has: {len(gate.getNexts())} nexts, {len(gate.getPrevs())} prevs")
         idx += 1
+    
+    input_gates = [gate_6, gate_8, gate_9, gate_7]
     
     circuit = CIRCUIT(input_gates)
     outputs = circuit.pulse(inputs)

@@ -437,15 +437,27 @@ class CIRCUIT(LogicGate):
         # every circuit is regularized to take in their direct inputs before other input gate outputs
         num_prevs = 0
         direct_inputs = []
+        num_direct_inputs = node.get_num_req_inputs()
+        
         if node.hasPrevs():
             prevs = node.getPrevs()
             num_prevs = len(prevs)
-            num_direct_inputs = node.get_num_req_inputs() - num_prevs
-        direct_inputs = inputs[input_idx[0]:input_idx[0]+num_direct_inputs]
-        input_idx[0] += num_direct_inputs
-        for prev in prevs:
-            direct_inputs.append(self.back_r(prev, inputs, input_idx))
+            num_direct_inputs -= num_prevs
+            
+            direct_inputs = inputs[input_idx[0]:input_idx[0]+num_direct_inputs]
+            input_idx[0] += num_direct_inputs
+            for prev in prevs:
+                direct_inputs.append(self.back_r(prev, inputs, input_idx))
                 
+        else:
+            direct_inputs = inputs[input_idx[0]:input_idx[0]+node.get_num_req_inputs()]
+            input_idx[0] += num_direct_inputs
+       
+        s = "None"
+        if node.getGate():
+            s = node.getGate().to_string()
+        print(f"back_r: node ID {node.getID()}, type = {s}, inputs = {direct_inputs}")
+        
         try:
             return node.pulse(direct_inputs)
         except AssertionError as e:
@@ -487,8 +499,6 @@ class CIRCUIT(LogicGate):
             assert bool(self.output_gates)
             
             assert self.get_num_req_inputs() == len(inputs)
-            
-            
             
             input_idx = [0]
             outputs = []
@@ -624,7 +634,29 @@ def main():
     
     circuit = CIRCUIT(input_gates)
     outputs = circuit.pulse(inputs)
+    
     print(f"Circuit Output: {outputs}")
+
+    gate_6_ideal_out = inputs[0] and inputs[1]
+    
+    gate_5_ideal_out = not gate_6_ideal_out
+    
+    gate_3_ideal_out = not gate_5_ideal_out
+    
+    gate_9_ideal_out = inputs[3] or inputs[4]
+    
+    gate_8_ideal_out = inputs[2] and gate_9_ideal_out
+    
+    gate_4_ideal_out = gate_5_ideal_out or gate_8_ideal_out
+    
+    gate_2_ideal_out = gate_3_ideal_out ^ gate_4_ideal_out
+    
+    gate_7_ideal_out = gate_8_ideal_out and inputs[5]
+    
+    gate_1_ideal_out = not (gate_2_ideal_out and gate_7_ideal_out)
+
+    assert gate_1_ideal_out == outputs[0]
+    
 
 
 

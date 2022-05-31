@@ -191,7 +191,11 @@ class XNOR(BinaryGate):
         return "XNOR"
 
 class GateNode:
-    def __init__(self, gate=None, nexts=[], prevs=[]):
+    def __init__(self, gate=None, nexts=None, prevs=None):
+        if nexts is None:
+            nexts = []
+        if prevs is None:
+            prevs = []
         self.gate = gate
         self.nexts = nexts
         self.prevs = prevs
@@ -309,8 +313,10 @@ class GateNode:
             idx += 1
         return ID
         
-    def pop_out_r(self, added_ids, visited=[]):
-        
+    def pop_out_r(self, added_ids, visited=None):
+        if visited is None:
+            visited = []
+            
         if not self.getID() in visited:
             print(self.getID())
             print(len(self.getNexts()))
@@ -340,8 +346,13 @@ class GateNode:
 
 class CIRCUIT(LogicGate):
        
-    def __init__(self, input_gates=[], output_gates=[], updated_IDs=False, updated_output_gates=False):
-        super().__init__()
+    def __init__(self, input_gates=None, output_gates=None, updated_IDs=False, updated_output_gates=False):
+        if input_gates is None:
+            input_gates = []
+        
+        if output_gates is None:
+            output_gates = []
+            
         self.input_gates = input_gates
         self.output_gates = output_gates
         self.updated_IDs = updated_IDs
@@ -607,7 +618,7 @@ def main():
     
     circuit = CIRCUIT(input_gates)
     outputs = circuit.pulse(inputs)
-    print(f"Circuit Output: {outputs[0]}")
+    print(f"Circuit Output: {outputs}")
 
 
 

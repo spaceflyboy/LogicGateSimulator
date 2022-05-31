@@ -5,7 +5,7 @@ import abc
 #     pulse(...): Take in inputs and return the logic gate's output
 #     get_num_req_inputs(): Return the number of inputs this gate takes in (E.g. 1 for NOT, 2 for AND)
 #     to_string(): Return a string representation of the gate. E.g. \"AND\" for an AND gate.
-class LogicGate(object): 
+class LogicGate: 
     __metaclass__ = abc.ABCMeta
     
     @abc.abstractmethod
@@ -18,6 +18,7 @@ class LogicGate(object):
     def get_num_req_inputs(self):
         # This method should return the integer number of inputs required by this gate
         return
+    
     
     @abc.abstractmethod
     def to_string(self):
@@ -43,9 +44,10 @@ class UnaryGate(LogicGate):
     def to_string(self):
         # Provide a string representation of the gate. E.g. \"AND\" for an AND gate.
         return
-        
+    
     def get_num_req_inputs(self):
         return 1
+    
 
 # Abstract Class which inherits from LogicGate and distinguishes BinaryGates as requiring two inputs
 # Abstract methods:
@@ -66,7 +68,7 @@ class BinaryGate(LogicGate):
     def to_string(self):
         # Provide a string representation of the gate. E.g. \"AND\" for an AND gate.
         return
-        
+    
     def get_num_req_inputs(self):
         return 2
 
@@ -202,7 +204,7 @@ class XNOR(BinaryGate):
     def to_string():
         return "XNOR"
 
-class GateNode():
+class GateNode:
     def __init__(self, gate=None, nexts=[], prevs=[]):
         self.gate = gate
         self.nexts = nexts
@@ -211,7 +213,7 @@ class GateNode():
         self.reset = True
         assert isinstance(self.nexts, list)
         assert isinstance(self.prevs, list)
-        assert isinstance(self.gate, LogicGate)
+        assert isinstance(self.gate, LogicGate) or gate is None
         assert isinstance(self.id, int)
     
     def isReset(self):
@@ -248,6 +250,7 @@ class GateNode():
         self.prevs.append(prev)
         
     def add_connect_next(self, next):
+        print("add_connect_next called")
         self.resetID()
         self.nexts.append(next)
         next.addPrev(self)
@@ -283,7 +286,7 @@ class GateNode():
     
     def setGate(self, gate):
         self.gate = gate
-        
+    
     def get_num_req_inputs():
         if self.gate is None:
             raise Exception("Cannot get number of required inputs because this node doesn't contain a gate")
@@ -303,197 +306,133 @@ class GateNode():
         return f"GateNode with ID {self.id} : Contains a {gate_str} gate"
 
     def assign_r(self, id):
-        self.setID(id)
-        print(f"assign_r: node {self.to_string()}")
+        if self.reset:
+            self.setID(id)
+            print(f"assign_r: node {self.to_string()}")
+        else:
+            return id
         id += 1
 
         idx = 0
         children = self.getNexts()
+        #print(len(children))
         
         for child in children:
-            if not child.isReset():
+            if child.isReset():
                 id = child.assign_r(id)
             idx += 1
         return id
+        
+    def pop_out_r(self, added_ids, visited=[]):
+        
+        if not self.getID() in visited:
+            print(self.getID())
+            print(len(self.getNexts()))
+            visited.append(self.getID())
+            if self.hasNexts():
+                nexts = self.getNexts()
+                for next_gate in nexts:
+                    next_gate.pop_out_r(added_ids, visited)
+            else:
+                print("*")
+                cur_id = self.getID()
+                if cur_id not in added_ids:
+                    added_ids[cur_id] = self
+                    
+    def look_r(self, target):
+        if self.getID() == target:
+            return self
+        else:
+            if self.hasNexts():
+                nexts = self.getNexts()
+                for next in nexts:
+                    res = next.look_r(target)
+                    if res is not None:
+                        return res
+        return None
+                
 
 class CIRCUIT(LogicGate):
-    def __init__(self):
-        super().__init__()
-        self.input_gates = []
-        self.output_gates = []
-        self.updated_IDs = False    
-        
-    def __init__(self, input_gates, output_gates=[]):
+       
+    def __init__(self, input_gates=[], output_gates=[], updated_IDs=False, updated_output_gates=False):
         super().__init__()
         self.input_gates = input_gates
         self.output_gates = output_gates
-        self.updated_IDs = False
+        self.updated_IDs = updated_IDs
+        self.updated_output_gates = updated_output_gates
     
     def getInputNodes(self):
         return self.input_gates
         
     def getOutputNodes(self):
-        return self.output_gates
-        
-    def unassignNodeIDs(self):
-        for node in self.input_gates:
-            node.resetAllIDs()
-        self.updated_IDs = False
-        
-    def assignNodeIDs(self):
-        if self.updated_IDs:
-            return
+        if self.updated_output_gates:
+            return self.output_gates
         else:
-            self.unassignNodeIDs()
+            self.populate_output_gates()
+            return self.output_gates
+            
+    def findNodeByID(self, id):
+        res = None
+        for input_gate in self.input_gates:
+            res = input_gate.look_r(target)
+            if res is not None:
+                return res
+        return None
+    
+    def addNonInputNode(self, node, input_ids):
+        assert isinstance(node, GateNode)
+        if not self.updated_IDs():
+            self.assignNodeIDs()
+        nodes = []
+        for id in input_ids:
+            nodes.append(self.findNodeByID(id))
         
-        cur_id = 0
- 
-        for node in self.input_gates:
-            next_id = node.assign_r(cur_id)
-            cur_id = next_id             
-                
-        self.updated_IDs = True
+        for node2 in nodes:
+            node2.add_connect_next(node)
+         
+        self.updated_IDs = False
+        self.updated_output_gates = False  
     
     def addInputNode(self, node):
         assert isinstance(node, GateNode)
         self.input_gates.append(node)
         self.updated_IDs = False
+        self.updated_output_gates = False
         
     def removeInputNode(self, index):
         assert isinstance(index, int)
         assert index >= 0
         assert index < len(self.input_gates)
         self.input_gates.pop(index)
+        self.updated_output_gates = False
     
-    """
     def get_num_req_inputs(self):
-        input_requirement_count = 0
-        for node in self.input_gates:
-            assert isinstance(node, GateNode)
+        if not self.updated_output_gates:
+            self.populate_output_gates()
+        
+        rq_in = 0
+        for input_gate in self.input_gates:
             try:
-                input_requirement_count += node.get_num_req_inputs()
+                rq_in += input_gate.get_num_req_inputs()
             except Exception as e:
                 print(f"CIRCUIT.get_num_req_inputs caught the following exception: {e}")
-                raise e
-        return input_requirement_count
-    """
-    """
-    # Helper method for preprecess_input_hierarchy(...)
-    def __find_input_overlap_r(input_gate, cur_gate, input_ids, overlaps=[]):
-        #if input_gate.getID() == cur_gate.getID():
-        
-        assert overlaps is not None
-        if input_get.getNexts():
-            for child in input_gate.getNexts():
-                if child.getID() in input_ids_c and child.getID() != input_gate.getID():
-                    overlaps.append(child)
-                    input_ids.remove(child.getID())
-        
-            nexts = input_gate.getNexts()
-            i = 0
-            while i < len(nexts) and len(input_ids) > 0:
-                child = nexts[i]
-                find_input_overlap_r(input_gate, child, input_ids, overlaps)
-            
-        
-        return overlaps
-    """   
-    """
-    # Helper method for CIRCUIT.pulse(...) which will sort out relationships between multiple input gates
-    # Inputs:
-    #     input_gates: List of input GateNodes which contain connections to all of the subsequent gate nodes.
-    #     inputs: inputs to CIRCUIT.pulse(...) which will help us preprocess overlapping circuit structures
-    # Outputs:
-    #     list of processed input gates. If input gates exist in a hierarchy, we will pulse through using inputs
-    def __preprocess_input_hieararchy(input_gates, inputs):
-        input_ids = [gate.getID() for gate in input_gates] 
-        overlappings = []
-        for i in range(len(input_gates)):
-            input_ids_sacrifice = input_ids.copy()
-            overlaps = __find_input_overlap_r(inpute_gates[i], input_gates[i], input_ids_sacrifice)
-            overlappings.append(overlaps)
-        
-        idx = 0
-        for overlaps in overlappings:
-            input_id = input_ids[idx]
-            input_node = input_gates[idx]
-            
-            idx += 1
-    """   
-    """
-    # Helper method for CIRCUIT.pulse which will find intersections.
-    # Inputs:
-    #     input_gates: List of input GateNodes which contain connections to all of the subsequent gate nodes.
-    # Outputs:
-    #     list of IDs at which input gates intersect and a tuple of input_gates which intersect at that point 
-    def __find_intersections(input_gates):
-        intersections = []
-        visited_nodes = {}
-        
-        cur_layer = None
-        input_idx = 0
-        for node in input_gates:
-            id = node.getID()
-            assert id != -1
-            if id in visited_nodes:
-                # Intersection found
-                visited_nodes[id] += (input_idx, )           
-            else:
-                # If it is an intersection, we won't find out on this iteration
-                visited_nodes[id] = (input_idx, )
-            cur_layer = node.getNexts()
-            for i in range(len(cur_layer)):
+                raise each
                 
-            input_idx += 1
-                
+            if input_gate.hasPrevs():
+                rq_in -= len(input_gate.getPrevs())
+        return rq_in
             
-        return intersections
-    """
-    """
-    def pulse(self, inputs):
-        if self.input_gates:
-            assert isinstance(inputs, list)
-            assert self.get_num_req_inputs() == len(inputs)
-            
-            self.assignNodeIDs() # ID every Node se we can detect overlaps between each input node's general tree
-            # Our underlying circuit actually has gates that take inputs and we have been supplied enough of them
-            assert self.updated_IDs
-            
-            #input_gates_processed = __preprocess_input_hieararchy(self.input_gates, inputs)
-            
-            #intersection_points = __find_intersections(self.input_gates)
-            
-            for node in input_gates_processed:
-                
-            
-                try:
-                    return input_gates.pulse(inputs)
-                except AssertionError as e:
-                    print(f"CIRCUIT.pulse(): Passing in that input tripped this assertion: {e}")
-                    raise e
-                except Exception as e:
-                    print(f"CIRCUIT.pulse(): Caught the following exception: {e}")
-                    raise e
-                    
-        raise Exception("This circuit has no input gates, cannot pulse it.")
-    """
-    
-    def pop_out_r(node, added_ids):
-        if node.hasNexts():
-            for next_gate in node.getNexts():
-                pop_out_r(next_gate, added_ids)
-        else:
-            cur_id = node.getID()
-            if cur_id not in added_ids:
-                added_ids[cur_id] = node
-                
-        
     def populate_output_gates(self):
+        if self.updated_output_gates: 
+            return
+            
         added_ids = {}
         for input_gate in self.input_gates:
-            pop_out_r(input_gate, added_ids)
+            input_gate.pop_out_r(added_ids)
         self.output_gates = added_ids.values()
+        
         assert bool(self.output_gates) or (not bool(self.input_gates) and not bool(self.output_gates))
+        self.updated_output_gates = True
          
     def back_r(node, inputs, inpt_idx):
         # PROBLEM:
@@ -518,6 +457,25 @@ class CIRCUIT(LogicGate):
         except Exception as e:
             print(f"CIRCUIT.pulse(): Caught the following exception: {e}")
             raise e    
+            
+    def unassignNodeIDs(self):
+        for node in self.input_gates:
+            node.resetAllIDs()
+        self.updated_IDs = False
+        
+    def assignNodeIDs(self):
+        if self.updated_IDs:
+            return
+        else:
+            self.unassignNodeIDs()
+        
+        cur_id = 0
+ 
+        for node in self.input_gates:
+            next_id = node.assign_r(cur_id)
+            cur_id = next_id             
+                
+        self.updated_IDs = True
         
     def pulse(self, inputs):
         if self.input_gates:
@@ -650,6 +608,11 @@ def main():
     
     gate_9.add_connect_next(gate_8)
     
+    gates = [gate_1, gate_2, gate_3, gate_4, gate_5, gate_6, gate_7, gate_8, gate_9]
+    idx = 1
+    for gate in gates:
+        print(f"main(): gate #{idx} (ID {gate.getID()}) has: {len(gate.getNexts())} nexts, {len(gate.getPrevs())} prevs")
+        idx += 1
     
     circuit = CIRCUIT(input_gates)
     outputs = circuit.pulse(inputs)

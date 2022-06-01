@@ -431,11 +431,13 @@ class CIRCUIT(LogicGate):
         assert bool(self.output_gates) or (not bool(self.input_gates) and not bool(self.output_gates))
         self.updated_output_gates = True
          
-    def back_r(self, node, inputs, input_idx, pulsed_nodes={}):
+    def back_r(self, node, inputs, input_idx, pulsed_nodes=None):
         # PROBLEM:
         # We have to guarantee that the list of input gates and inputs are given such that
         # every circuit is regularized to take in their direct inputs before other input gate outputs
-        
+        if pulsed_nodes is None:
+            pulsed_nodes = {}
+            
         if node.getID() in pulsed_nodes:
             return pulsed_nodes[node.getID()]
         
@@ -662,6 +664,7 @@ def main():
     gate_1_ideal_out = not (gate_2_ideal_out and gate_7_ideal_out)
 
     assert gate_1_ideal_out == outputs[0]
+    
     
 
 

@@ -431,14 +431,18 @@ class CIRCUIT(LogicGate):
         assert bool(self.output_gates) or (not bool(self.input_gates) and not bool(self.output_gates))
         self.updated_output_gates = True
          
-    def back_r(self, node, inputs, input_idx):
+    def back_r(self, node, inputs, input_idx, pulsed_nodes={}):
         # PROBLEM:
         # We have to guarantee that the list of input gates and inputs are given such that
         # every circuit is regularized to take in their direct inputs before other input gate outputs
+        
+        if node.getID() in pulsed_nodes:
+            return pulsed_nodes[node.getID()]
+        
         num_prevs = 0
         direct_inputs = []
-        num_direct_inputs = node.get_num_req_inputs()
-        
+        num_direct_inputs = node.get_num_req_inputs() 
+            
         if node.hasPrevs():
             prevs = node.getPrevs()
             num_prevs = len(prevs)
@@ -447,9 +451,10 @@ class CIRCUIT(LogicGate):
             direct_inputs = inputs[input_idx[0]:input_idx[0]+num_direct_inputs]
             input_idx[0] += num_direct_inputs
             for prev in prevs:
-                direct_inputs.append(self.back_r(prev, inputs, input_idx))
+                direct_inputs.append(self.back_r(prev, inputs, input_idx, pulsed_nodes))
                 
         else:
+            
             direct_inputs = inputs[input_idx[0]:input_idx[0]+node.get_num_req_inputs()]
             input_idx[0] += num_direct_inputs
        
@@ -459,7 +464,8 @@ class CIRCUIT(LogicGate):
         print(f"back_r: node ID {node.getID()}, type = {s}, inputs = {direct_inputs}")
         
         try:
-            return node.pulse(direct_inputs)
+            pulsed_nodes[node.getID()] = node.pulse(direct_inputs)
+            return pulsed_nodes[node.getID()]
         except AssertionError as e:
             print(f"CIRCUIT.pulse(): Passing in that input tripped this assertion: {e}")
             raise e

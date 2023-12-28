@@ -36,12 +36,12 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
             args.push_back(inputs[inputsIndex]);
             inputsIndex++;
         } else {
-            Gate inputGate = this->attachedInputGates[attachedInputGatesIndex];
+            Gate inputGate = this->attachedInputInfo[attachedInputGatesIndex].attachedInputGate;
             
             operation_output pulseOutput = inputGate.checkPulse(); // Re-using struct for convenience
             if (pulseOutput.success) {
-                for (bool output : pulseOutput.outputs) {
-                    args.push_back(output);
+                for (int outputIndex : attachedInputInfo[attachedInputGatesIndex].attachedInputGateAttachmentIndices) {
+                    args.push_back(pulseOutput.outputs[outputIndex]);
                 }
                 attachedInputGatesIndex++;
             } else {
@@ -61,9 +61,9 @@ void Gate::pulse(std::vector<bool> inputs) {
         operation_output operationResult = this->operate(args);
         if (operationResult.success) {
             this->pulseOutputs = operationResult.outputs;
-            for (Gate forwardLink : this->forwardLinks) {
+            for (Gate outputGate : this->attachedOutputGates) {
                 std::vector<bool> emptyInputs;
-                forwardLink.pulse(emptyInputs); // recurse (kind of)
+                outputGate.pulse(emptyInputs); // recurse (kind of)
             }
         }
     } else {
@@ -71,8 +71,8 @@ void Gate::pulse(std::vector<bool> inputs) {
     }
 }
 
-Gate::Gate(std::vector<bool> inputFlags, std::vector<Gate> attachedInputGates, std::vector<Gate> forwardLinks, FunctionPointer operation) { 
-    if (totalInputs <= 0 || directInputs > totalInputs || directInputs < 0 || inputFlags.size() != totalInputs || ((directInputs != totalInputs) && attachedInputGates.size() == 0)) {
+Gate::Gate(std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation) { 
+    if (totalInputs <= 0 || directInputs > totalInputs || directInputs < 0 || inputFlags.size() != totalInputs || ((directInputs != totalInputs) && attachedInputInfo.size() == 0)) {
         throw std::invalid_argument("Invalid argument(s) for constructing a Gate object. "
                                     "Total inputs must be a positive integer, direct inputs "
                                     "must be an integer between 0 and total inputs, and input " 
@@ -88,14 +88,15 @@ Gate::Gate(std::vector<bool> inputFlags, std::vector<Gate> attachedInputGates, s
         }
     }
     this->directInputs = cnt;
-    this->attachedInputGates = attachedInputGates;
+    this->attachedInputInfo = attachedInputInfo;
     this->inputFlags = inputFlags;
     this->validPulse = false;
     this->pulseOutputs = std::vector<bool>();
     this->operation = operation;
-    this->forwardLinks = forwardLinks;
+    this->attachedOutputGates = attachedOutputGates;
 }
 
+/*
 void Gate::backwardLink(std::vector<Gate> gatesToLink, bool replace_flag) {
     if (replace_flag || gatesToLink.size() == 0) {
         this->forwardLinks = gatesToLink;
@@ -116,6 +117,7 @@ void Gate::forwardLink(std::vector<Gate> gatesToLink, bool replace_flag) {
         
     }
 }
+*/
 
 int Gate::pulse(std::vector<bool> oversized_inputs, int startdex) {
     std::vector<bool> selected_inputs;

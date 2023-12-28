@@ -27,7 +27,7 @@ operation_output Gate::checkPulse() {
     return result;
 }
 
-void Gate::pulse(std::vector<bool> inputs) {
+std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
     int inputsIndex = 0;
     int attachedInputGatesIndex = 0;
     std::vector<bool> args;
@@ -50,7 +50,11 @@ void Gate::pulse(std::vector<bool> inputs) {
             }
         }
     }
+}
 
+void Gate::pulse(std::vector<bool> inputs) {
+
+    std::vector<bool> args = this->collectPulseInputs(inputs);
     if (args.size() == this->totalInputs) {
         operation_output operationResult = this->operate(args);
         if (operationResult.success) {

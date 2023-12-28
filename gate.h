@@ -3,11 +3,16 @@
 #define GATE_H
 
 #include <vector> // Necessary here because many of the methods and class members use/are vectors
-
+class Gate;
 // Useful struct for simultaneously checking success and obtaining a value from some class methods
 typedef struct operation_output {
     bool success;
     std::vector<bool> outputs;
+};
+
+struct indirect_input_info {
+    Gate attachedInputGate;
+    std::vector<int> attachedInputGateAttachmentIndices;
 };
 
 // Type for gate operation function pointers. 
@@ -17,13 +22,16 @@ typedef std::vector<bool>(*FunctionPointer)(std::vector<bool>);
 
 // Class representing a generic logic gate (arbitrary number of inputs)
 class Gate {
+    // Struct for specifying which outputs of an attached input gate
+    // the gate being created is actually attached to
+
     protected:
         int totalInputs; // Total number of inputs this gate takes
         int directInputs; // Number of inputs supplied directly (i.e. not by a different gate's pulse)
         int totalOutputs; // Total number outputs this gate has
         std::vector<bool> inputFlags; // totalInputs-length vector of flags indicating direct inputs
         //TODO: Have constructor validate attachedInputInfo's indices
-        std::vector<indirect_input_info> attachedInputInfo; // linkages to gates which supply indirect inputs
+        std::vector<struct indirect_input_info> attachedInputInfo; // linkages to gates which supply indirect inputs
         std::vector<Gate> attachedOutputGates; // linkages to gates which this gate supplies indirect inputs to
         bool validPulse; // flag indicating whether the value in pulseOutput is valid
         std::vector<bool> pulseOutputs; // boolean output of the logic gate
@@ -63,7 +71,7 @@ class Gate {
         // // attachedInputGates: Vector of input gates which supply indirect inputs (backward links)
         // // forwardLinks: Vector of gates which take in this gate's output(s) as input
         // // operation: Function pointer representing the logic gate's actual operation. 
-        Gate(std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
+        Gate(std::vector<bool> inputFlags, std::vector<struct indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
 
         // TODO: Fix link methods with new connection specification info
         /*
@@ -75,13 +83,6 @@ class Gate {
         // Pulse wrapper for circuits to use. 
         // Will supply only necessary inputs and return the next index in oversized_inputs to be used
         int pulse(std::vector<bool> oversized_inputs, int startdex); 
-};
-
-// Struct for specifying which outputs of an attached input gate
-// the gate being created is actually attached to
-typedef struct indirect_input_info {
-    Gate attachedInputGate;
-    std::vector<int> attachedInputGateAttachmentIndices;
 };
 
 #endif

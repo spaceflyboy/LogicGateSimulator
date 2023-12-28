@@ -36,7 +36,8 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
             args.push_back(inputs[inputsIndex]);
             inputsIndex++;
         } else {
-            Gate inputGate = this->attachedInputInfo[attachedInputGatesIndex].attachedInputGate;
+            struct indirect_input_info inputInfo = this->attachedInputInfo[attachedInputGatesIndex];
+            Gate inputGate = inputInfo.attachedInputGate;
             
             operation_output pulseOutput = inputGate.checkPulse(); // Re-using struct for convenience
             if (pulseOutput.success) {

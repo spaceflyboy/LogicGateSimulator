@@ -2,34 +2,68 @@
 #include <stdexcept>
 #include <iostream>
 
-Gate::operation_output Gate::operate(std::vector<bool> argInputs) {
+operation_output Gate::operate(std::vector<bool> argInputs) {
     operation_output result;
-    if (int x = this->operation(argInputs)) {
+    std::vector<bool> outputs = this->operation(argInputs);
+    if (outputs.size() == 0) {
         result.success = false;
-        result.output = false;
+        result.outputs = std::vector<bool>();
     } else {
         result.success = true;
-        result.output = x;
+        result.outputs = outputs;
     }
     return result;
 }   
 
-// Get information about the validity and content of the stored pulse value for this gate
-// Inputs: None
-// Outputs: operation_output struct containing status code and output
-// Note that this is a repurposing of the operation_output struct- "success" indicates validity.
-Gate::operation_output Gate::checkPulse() {
+operation_output Gate::checkPulse() {
     operation_output result;
     if (this->validPulse) {
         result.success = true;
-        result.output = this->pulseOutput;
+        result.outputs = this->pulseOutputs;
     } else {
         result.success = false;
-        result.output = false;
+        result.outputs = std::vector<bool>();
     }
     return result;
 }
 
+void Gate::pulse(std::vector<bool> inputs) {
+    int inputsIndex = 0;
+    int attachedInputGatesIndex = 0;
+    std::vector<bool> args;
+    for (bool flag : this->inputFlags) {
+        if (flag) {
+            args.push_back(inputs[inputsIndex]);
+            inputsIndex++;
+        } else {
+            Gate inputGate = this->attachedInputGates[attachedInputGatesIndex];
+            
+            operation_output pulseOutput = inputGate.checkPulse(); // Re-using struct for convenience
+            if (pulseOutput.success) {
+                for (bool output : pulseOutput.outputs) {
+                    args.push_back(output);
+                }
+                attachedInputGatesIndex++;
+            } else {
+                this->pulseOutputs = std::vector<bool>();
+                this->validPulse = false;
+            }
+        }
+    }
+
+    if (args.size() == this->totalInputs) {
+        operation_output operationResult = this->operate(args);
+        if (operationResult.success) {
+            this->pulseOutputs = operationResult.outputs;
+            for (Gate forwardLink : this->forwardLinks) {
+                std::vector<bool> emptyInputs;
+                forwardLink.pulse(emptyInputs); // recurse (kind of)
+            }
+        }
+    } else {
+        throw std::invalid_argument("Invalid argument: Pulse does not have the required number of inputs.");
+    }
+}
 
 Gate::Gate(std::vector<bool> inputFlags, std::vector<Gate> attachedInputGates, std::vector<Gate> forwardLinks, FunctionPointer operation) { 
     if (totalInputs <= 0 || directInputs > totalInputs || directInputs < 0 || inputFlags.size() != totalInputs || ((directInputs != totalInputs) && attachedInputGates.size() == 0)) {
@@ -51,12 +85,22 @@ Gate::Gate(std::vector<bool> inputFlags, std::vector<Gate> attachedInputGates, s
     this->attachedInputGates = attachedInputGates;
     this->inputFlags = inputFlags;
     this->validPulse = false;
-    this->pulseOutput = false;
+    this->pulseOutputs = std::vector<bool>();
     this->operation = operation;
     this->forwardLinks = forwardLinks;
 }
 
-void Gate::forward_link(std::vector<Gate> gatesToLink, bool replace_flag) {
+void Gate::backwardLink(std::vector<Gate> gatesToLink, bool replace_flag) {
+    if (replace_flag || gatesToLink.size() == 0) {
+        this->forwardLinks = gatesToLink;
+    } else {
+        for (Gate gate : gatesToLink) {
+            this->forwardLinks.push_back(gate);
+        }
+    }
+}
+
+void Gate::forwardLink(std::vector<Gate> gatesToLink, bool replace_flag) {
     if (replace_flag || gatesToLink.size() == 0) {
         this->forwardLinks = gatesToLink;
     } else {
@@ -67,38 +111,12 @@ void Gate::forward_link(std::vector<Gate> gatesToLink, bool replace_flag) {
     }
 }
 
-void Gate::pulse(std::vector<bool> inputs) {
-    int inputsIndex = 0;
-    int attachedInputGatesIndex = 0;
-    std::vector<bool> args;
-    for (bool flag : this->inputFlags) {
-        if (flag) {
-            args.push_back(inputs[inputsIndex]);
-            inputsIndex++;
-        } else {
-            Gate inputGate = this->attachedInputGates[attachedInputGatesIndex];
-            
-            operation_output pulseOutput = inputGate.checkPulse(); // Re-using struct for convenience
-            if (pulseOutput.success) {
-
-            } else {
-                args.push_back(pulseOutput.output);
-                attachedInputGatesIndex++;
-            }
-        }
+int Gate::pulse(std::vector<bool> oversized_inputs, int startdex) {
+    std::vector<bool> selected_inputs;
+    for (int i = 0; i < this->directInputs; i++) {
+        selected_inputs.push_back(oversized_inputs[startdex + i]);
     }
-
-    if (args.size() == this->totalInputs) {
-        operation_output operationResult = this->operate(args);
-        if (operationResult.success) {
-            this->pulseOutput = operationResult.output;
-            for (Gate forwardLink : this->forwardLinks) {
-                std::vector<bool> emptyInputs;
-                forwardLink.pulse(emptyInputs); // recurse (kind of)
-            }
-        }
-    } else {
-        throw std::invalid_argument("Invalid argument: Pulse does not have the required number of inputs.");
-    }
+    this->pulse(selected_inputs);
+    return startdex + this->directInputs;
 }
 

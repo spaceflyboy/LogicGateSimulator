@@ -4,33 +4,32 @@
 
 #include <vector> // Necessary here because many of the methods and class members use/are vectors
 
+// Useful struct for simultaneously checking success and obtaining a value from some class methods
+struct operation_output {
+    bool success;
+    std::vector<bool> outputs;
+};
+
 // Type for gate operation function pointers. 
 // Gate operations should return an integer (0 for success)
 // and take in a vector of booleans as arguments
-typedef int(*FunctionPointer)(std::vector<bool>); 
+typedef std::vector<bool>(*FunctionPointer)(std::vector<bool>); 
 
 // Class representing a generic logic gate (arbitrary number of inputs)
 class Gate {
-    // Useful struct for simultaneously checking success and obtaining a value from some class methods
-    struct operation_output {
-        bool success;
-        bool output;
-    };
-
     protected:
         int totalInputs; // Total number of inputs this gate takes
         int directInputs; // Number of inputs supplied directly (i.e. not by a different gate's pulse)
         std::vector<bool> inputFlags; // totalInputs-length vector of flags indicating direct inputs
-
         std::vector<Gate> attachedInputGates; // linkages to gates which supply indirect inputs
         std::vector<Gate> forwardLinks; // linkages to gates which this gate supplies indirect inputs to
         bool validPulse; // flag indicating whether the value in pulseOutput is valid
-        bool pulseOutput; // boolean output of the logic gate
+        std::vector<bool> pulseOutputs; // boolean output of the logic gate
         FunctionPointer operation; // Pointer to the operation performed by the logic gate 
 
         // Perform the actual logic gate operation using the stored function pointer
         // Inputs: 
-        // // argInputs: List of boolean inputs to the gate to perform the stored operation on
+        // // argInputs: Vector of boolean inputs to the gate to perform the stored operation on
         // Outputs:
         // // operation_output struct containing status code and output
         operation_output operate(std::vector<bool> argInputs);
@@ -41,12 +40,24 @@ class Gate {
         // Note that this is a repurposing of the operation_output struct- "success" indicates validity.
         operation_output checkPulse();
 
+        void pulse(std::vector<bool> inputs);
+
     public:
+        // Constructor
+        // Inputs:
+        // // inputFlags: Vector of flags indicating which inputs (in order) are direct or indirect
+        // // attachedInputGates: Vector of input gates which supply indirect inputs (backward links)
+        // // forwardLinks: Vector of gates which take in this gate's output(s) as input
+        // // operation: Function pointer representing the logic gate's actual operation. 
         Gate(std::vector<bool> inputFlags, std::vector<Gate> attachedInputGates, std::vector<Gate> forwardLinks, FunctionPointer operation);
 
-        void forward_link(std::vector<Gate> gatesToLink, bool replace_flag);
+        void backwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
 
-        void pulse(std::vector<bool> inputs);
+        void forwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
+
+        // Pulse wrapper for circuits to use. 
+        // Will supply only necessary inputs and return the next index in oversized_inputs to be used
+        int pulse(std::vector<bool> oversized_inputs, int startdex); 
 };
 
 #endif

@@ -21,6 +21,7 @@ class Gate {
         int totalInputs; // Total number of inputs this gate takes
         int directInputs; // Number of inputs supplied directly (i.e. not by a different gate's pulse)
         std::vector<bool> inputFlags; // totalInputs-length vector of flags indicating direct inputs
+        std::vector<bool> outputFlags; // total
         std::vector<Gate> attachedInputGates; // linkages to gates which supply indirect inputs
         std::vector<Gate> forwardLinks; // linkages to gates which this gate supplies indirect inputs to
         bool validPulse; // flag indicating whether the value in pulseOutput is valid

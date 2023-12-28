@@ -21,6 +21,7 @@ class Gate {
         int totalInputs; // Total number of inputs this gate takes
         int directInputs; // Number of inputs supplied directly (i.e. not by a different gate's pulse)
         std::vector<bool> inputFlags; // totalInputs-length vector of flags indicating direct inputs
+        std::vector<bool> outputFlags; // total
         std::vector<Gate> attachedInputGates; // linkages to gates which supply indirect inputs
         std::vector<Gate> forwardLinks; // linkages to gates which this gate supplies indirect inputs to
         bool validPulse; // flag indicating whether the value in pulseOutput is valid
@@ -40,6 +41,18 @@ class Gate {
         // Note that this is a repurposing of the operation_output struct- "success" indicates validity.
         operation_output checkPulse();
 
+        // Helper function for pulse that orders and collects both direct and indirect inputs
+        // Inputs: 
+        // // inputs: Vector of direct inputs
+        // Outputs:
+        // // Vector of collected outputs
+        std::vector<bool> collectPulseInputs(std::vector<bool> inputs);
+
+        // Pulse the logic gate and perform the operation
+        // Inputs:
+        // // inputs: Vector of direct inputs
+        // Outputs:
+        // // None
         void pulse(std::vector<bool> inputs);
 
     public:

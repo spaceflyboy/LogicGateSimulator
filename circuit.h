@@ -14,7 +14,7 @@ class Circuit {
         std::vector<Gate> outputGates;
     public:
         Circuit(std::vector<Gate> inputGates, std::vector<Gate> outputGates);
-
+        std::vector<bool> collectPulseInputs(std::vector<bool> directInputs);
         std::vector<bool> pulse(std::vector<bool> inputs);
 };
 #endif

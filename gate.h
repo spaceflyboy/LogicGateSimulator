@@ -2,18 +2,20 @@
 #ifndef GATE_H
 #define GATE_H
 
+
 #include <vector> // Necessary here because many of the methods and class members use/are vectors
-class Gate;
 // Useful struct for simultaneously checking success and obtaining a value from some class methods
-typedef struct operation_output {
+typedef struct  {
     bool success;
     std::vector<bool> outputs;
-};
+} operation_output;
 
-struct indirect_input_info {
-    Gate attachedInputGate;
-    std::vector<int> attachedInputGateAttachmentIndices;
-};
+class Gate;
+
+typedef struct {
+    std::vector<int> attachmentIndices;
+    Gate *attachedInputGate;
+} indirect_input_info;
 
 // Type for gate operation function pointers. 
 // Gate operations should return an integer (0 for success)
@@ -31,7 +33,7 @@ class Gate {
         int totalOutputs; // Total number outputs this gate has
         std::vector<bool> inputFlags; // totalInputs-length vector of flags indicating direct inputs
         //TODO: Have constructor validate attachedInputInfo's indices
-        std::vector<struct indirect_input_info> attachedInputInfo; // linkages to gates which supply indirect inputs
+        std::vector<indirect_input_info> attachedInputInfo; // linkages to gates which supply indirect inputs
         std::vector<Gate> attachedOutputGates; // linkages to gates which this gate supplies indirect inputs to
         bool validPulse; // flag indicating whether the value in pulseOutput is valid
         std::vector<bool> pulseOutputs; // boolean output of the logic gate
@@ -71,7 +73,7 @@ class Gate {
         // // attachedInputGates: Vector of input gates which supply indirect inputs (backward links)
         // // forwardLinks: Vector of gates which take in this gate's output(s) as input
         // // operation: Function pointer representing the logic gate's actual operation. 
-        Gate(std::vector<bool> inputFlags, std::vector<struct indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
+        Gate(std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
 
         // TODO: Fix link methods with new connection specification info
         /*

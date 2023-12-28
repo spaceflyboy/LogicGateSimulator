@@ -10,6 +10,13 @@ struct operation_output {
     std::vector<bool> outputs;
 };
 
+// Struct for specifying which outputs of an attached input gate
+// the gate being created is actually attached to
+struct indirect_input_info {
+    Gate attachedInputGate;
+    std::vector<int> attachedInputGateAttachmentIndices;
+};
+
 // Type for gate operation function pointers. 
 // Gate operations should return an integer (0 for success)
 // and take in a vector of booleans as arguments
@@ -21,8 +28,8 @@ class Gate {
         int totalInputs; // Total number of inputs this gate takes
         int directInputs; // Number of inputs supplied directly (i.e. not by a different gate's pulse)
         std::vector<bool> inputFlags; // totalInputs-length vector of flags indicating direct inputs
-        std::vector<Gate> attachedInputGates; // linkages to gates which supply indirect inputs
-        std::vector<Gate> forwardLinks; // linkages to gates which this gate supplies indirect inputs to
+        std::vector<indirect_input_info> attachedInputInfo; // linkages to gates which supply indirect inputs
+        std::vector<Gate> attachedOutputGates; // linkages to gates which this gate supplies indirect inputs to
         bool validPulse; // flag indicating whether the value in pulseOutput is valid
         std::vector<bool> pulseOutputs; // boolean output of the logic gate
         FunctionPointer operation; // Pointer to the operation performed by the logic gate 
@@ -61,8 +68,9 @@ class Gate {
         // // attachedInputGates: Vector of input gates which supply indirect inputs (backward links)
         // // forwardLinks: Vector of gates which take in this gate's output(s) as input
         // // operation: Function pointer representing the logic gate's actual operation. 
-        Gate(std::vector<bool> inputFlags, std::vector<Gate> attachedInputGates, std::vector<Gate> forwardLinks, FunctionPointer operation);
+        Gate(std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
 
+        // TODO: Fix link methods with new connection specification info
         void backwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
 
         void forwardLink(std::vector<Gate> gatesToLink, bool replace_flag);

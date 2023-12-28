@@ -1,4 +1,4 @@
-#include <gate.h>
+#include "gate.h"
 #include <stdexcept>
 #include <iostream>
 
@@ -50,6 +50,8 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
             }
         }
     }
+
+    return args;
 }
 
 void Gate::pulse(std::vector<bool> inputs) {
@@ -124,3 +126,8 @@ int Gate::pulse(std::vector<bool> oversized_inputs, int startdex) {
     return startdex + this->directInputs;
 }
 
+int main() {
+
+    std::cout << "Fuck C++\n";
+    return 0;
+}

@@ -5,16 +5,9 @@
 #include <vector> // Necessary here because many of the methods and class members use/are vectors
 
 // Useful struct for simultaneously checking success and obtaining a value from some class methods
-struct operation_output {
+typedef struct operation_output {
     bool success;
     std::vector<bool> outputs;
-};
-
-// Struct for specifying which outputs of an attached input gate
-// the gate being created is actually attached to
-struct indirect_input_info {
-    Gate attachedInputGate;
-    std::vector<int> attachedInputGateAttachmentIndices;
 };
 
 // Type for gate operation function pointers. 
@@ -82,6 +75,13 @@ class Gate {
         // Pulse wrapper for circuits to use. 
         // Will supply only necessary inputs and return the next index in oversized_inputs to be used
         int pulse(std::vector<bool> oversized_inputs, int startdex); 
+};
+
+// Struct for specifying which outputs of an attached input gate
+// the gate being created is actually attached to
+typedef struct indirect_input_info {
+    Gate attachedInputGate;
+    std::vector<int> attachedInputGateAttachmentIndices;
 };
 
 #endif

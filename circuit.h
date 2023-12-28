@@ -7,6 +7,7 @@
 
 class Circuit {
     protected:
+        int totalInputs;
         int directInputs;
         std::vector<bool> inputFlags;
         std::vector<Gate> inputGates;

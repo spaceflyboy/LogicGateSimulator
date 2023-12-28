@@ -40,7 +40,7 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
             
             operation_output pulseOutput = inputGate.checkPulse(); // Re-using struct for convenience
             if (pulseOutput.success) {
-                for (int outputIndex : attachedInputInfo[attachedInputGatesIndex].attachedInputGateAttachmentIndices) {
+                for (int outputIndex : this->attachedInputInfo[attachedInputGatesIndex].attachedInputGateAttachmentIndices) {
                     args.push_back(pulseOutput.outputs[outputIndex]);
                 }
                 attachedInputGatesIndex++;

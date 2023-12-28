@@ -6,7 +6,6 @@ Circuit::Circuit(std::vector<Gate> inputGates, std::vector<Gate> outputGates) {
     this->inputGates = inputGates;
     this->outputGates = outputGates;
     this->totalInputs = this->inputGates.size();
-    this->
 }
 
 std::vector<bool> collectPulseInputs() {

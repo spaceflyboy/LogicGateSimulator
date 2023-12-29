@@ -73,14 +73,14 @@ class Gate {
         // // attachedInputGates: Vector of input gates which supply indirect inputs (backward links)
         // // forwardLinks: Vector of gates which take in this gate's output(s) as input
         // // operation: Function pointer representing the logic gate's actual operation. 
-        Gate(std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
+        Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
 
         // TODO: Fix link methods with new connection specification info
-        /*
-        void backwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
+        
+        void backwardLink(std::vector<indirect_input_info> info, bool replace_flag);
 
         void forwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
-        */
+        
 
         // Pulse wrapper for circuits to use. 
         // Will supply only necessary inputs and return the next index in oversized_inputs to be used

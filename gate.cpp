@@ -5,7 +5,7 @@
 operation_output Gate::operate(std::vector<bool> argInputs) {
     operation_output result;
     std::vector<bool> outputs = this->operation(argInputs);
-    if (outputs.size() == 0) {
+    if (outputs.size() != this->totalOutputs) {
         result.success = false;
         result.outputs = std::vector<bool>();
     } else {
@@ -55,6 +55,14 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
     return args;
 }
 
+// TODO:
+// Shouldn't be throwing invalid argument
+// If an attached input gate hasn't fired yet, then pulse fails but doesn't error.
+// This method shouldn't be void anymore, essentially. And the pulse wrapper will have to
+// return multiple values. May need another struct type. 
+// If I want to throw that invaild argument it should be up front and the condition
+// should be if the inputs parameter is a different length than this->directInputs
+
 void Gate::pulse(std::vector<bool> inputs) {
 
     std::vector<bool> args = this->collectPulseInputs(inputs);
@@ -72,7 +80,7 @@ void Gate::pulse(std::vector<bool> inputs) {
     }
 }
 
-Gate::Gate(std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation) { 
+Gate::Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation) { 
     if (totalInputs <= 0 || directInputs > totalInputs || directInputs < 0 || inputFlags.size() != totalInputs || ((directInputs != totalInputs) && attachedInputInfo.size() == 0)) {
         throw std::invalid_argument("Invalid argument(s) for constructing a Gate object. "
                                     "Total inputs must be a positive integer, direct inputs "
@@ -95,30 +103,30 @@ Gate::Gate(std::vector<bool> inputFlags, std::vector<indirect_input_info> attach
     this->pulseOutputs = std::vector<bool>();
     this->operation = operation;
     this->attachedOutputGates = attachedOutputGates;
+    this->totalOutputs = totalOutputs;
 }
 
-/*
-void Gate::backwardLink(std::vector<Gate> gatesToLink, bool replace_flag) {
-    if (replace_flag || gatesToLink.size() == 0) {
-        this->forwardLinks = gatesToLink;
+
+void Gate::backwardLink(std::vector<indirect_input_info> info, bool replace_flag) {
+    if (replace_flag || info.size() == 0) {
+        this->attachedInputInfo = info;
     } else {
-        for (Gate gate : gatesToLink) {
-            this->forwardLinks.push_back(gate);
+        for (indirect_input_info gate_info : info) {
+            this->attachedInputInfo.push_back(gate_info);
         }
     }
 }
 
 void Gate::forwardLink(std::vector<Gate> gatesToLink, bool replace_flag) {
     if (replace_flag || gatesToLink.size() == 0) {
-        this->forwardLinks = gatesToLink;
+        this->attachedOutputGates = gatesToLink;
     } else {
         for (Gate gate : gatesToLink) {
-            this->forwardLinks.push_back(gate);
+            this->attachedOutputGates.push_back(gate);
         }
-        
     }
 }
-*/
+
 
 int Gate::pulse(std::vector<bool> oversized_inputs, int startdex) {
     std::vector<bool> selected_inputs;

@@ -56,14 +56,16 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
 }
 
 // TODO:
-// Shouldn't be throwing invalid argument
-// If an attached input gate hasn't fired yet, then pulse fails but doesn't error.
 // This method shouldn't be void anymore, essentially. And the pulse wrapper will have to
 // return multiple values. May need another struct type. 
 // If I want to throw that invaild argument it should be up front and the condition
 // should be if the inputs parameter is a different length than this->directInputs
 
-void Gate::pulse(std::vector<bool> inputs) {
+pulseStatusCode Gate::pulse(std::vector<bool> inputs) {
+
+    if (inputs.size() != this->directInputs) {
+        throw std::invalid_argument("Invalid argument: Pulse does not have the required number of inputs.");
+    }
 
     std::vector<bool> args = this->collectPulseInputs(inputs);
     if (args.size() == this->totalInputs) {
@@ -73,10 +75,16 @@ void Gate::pulse(std::vector<bool> inputs) {
             for (Gate outputGate : this->attachedOutputGates) {
                 std::vector<bool> emptyInputs;
                 outputGate.pulse(emptyInputs); // recurse (kind of)
+                // We don't care about the return code because partial pulsing is intended
+                // I.e. if it has direct inputs it shouldn't be pulsed until it is supplied with real inputs
+                // instead of emptyInputs
             }
+            return success;
+        } else {
+            return operationFailure;
         }
     } else {
-        throw std::invalid_argument("Invalid argument: Pulse does not have the required number of inputs.");
+        return inputGateFailure;
     }
 }
 

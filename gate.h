@@ -17,6 +17,12 @@ typedef struct {
     Gate *attachedInputGate;
 } indirect_input_info;
 
+enum pulseStatusCode {
+    success = 0,
+    inputGateFailure = 1,
+    operationFailure = 2
+};
+
 // Type for gate operation function pointers. 
 // Gate operations should return an integer (0 for success)
 // and take in a vector of booleans as arguments
@@ -64,7 +70,7 @@ class Gate {
         // // inputs: Vector of direct inputs
         // Outputs:
         // // None
-        void pulse(std::vector<bool> inputs);
+        pulseStatusCode pulse(std::vector<bool> inputs);
 
     public:
         // Constructor

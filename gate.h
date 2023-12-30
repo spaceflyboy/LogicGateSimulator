@@ -2,6 +2,11 @@
 #ifndef GATE_H
 #define GATE_H
 
+#define DEBUG 0
+#if DEBUG == 0:
+    #include "utilities.cpp"
+#endif
+
 // MAJOR TODO: Tweak pulse logic to allow for cyclic connections in boolean circuits.
 // This will complicate things but I think it should be supported. 
 
@@ -104,7 +109,7 @@ class Gate {
 
         void connect(std::vector<Gate *> inputGatesToLink, std::vector<std::vector<int>> attachmentIndicesList);
 
-        std::vector<int> debugGet() const {
+        std::vector<int> debugGateFieldFetch() const {
             return std::vector<int> { this->totalInputs, this->directInputs, this->totalOutputs, (int) this->inputFlags.size(), (int) this->attachedInputInfo.size(), (int) this->attachedOutputGates.size(), (int) this->validPulse };
         }        
 };

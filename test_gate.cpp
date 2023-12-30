@@ -182,7 +182,7 @@ void test() {
         test_successes.push_back(false);
     }
 
-    // Test 8: Multi-layer, multi-input-gate collection of gates. Circuit pulse method test.
+    // Test 8: Multi-layer, multi-input-gate pulse test. Also a connect and circuit pulse method test.
     Gate inputGate1 = Gate(1, std::vector<bool> {true, true}, &AND_2_1);
     Gate inputGate2 = Gate(1, std::vector<bool> {true, true}, &AND_2_1);
     layer2 = Gate(1, std::vector<bool> {false, false}, &AND_2_1);

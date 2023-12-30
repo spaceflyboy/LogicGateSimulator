@@ -1,20 +1,6 @@
 #include "gate.h"
 #include <stdexcept>
 #include <iostream>
-#include <string>
-
-std::string gate_to_string(const Gate& g) {
-    std::string s = "";
-    std::vector<int> gateFields = g.debugGet();
-    s += "G(" + std::to_string(gateFields[0]) + " totalInputs, "\
-    + std::to_string(gateFields[1]) + " directInputs, "\
-    + std::to_string(gateFields[2]) + " totalOutputs, "\
-    + std::to_string(gateFields[3]) + " inputFlags size, "\
-    + std::to_string(gateFields[4]) + " attachedInputInfo objects, "\
-    + std::to_string(gateFields[5]) + " attachedOutputGate objects, "\
-    + std::to_string(gateFields[6]) + " validPulse flag)";
-    return s;
-}
 
 operation_output Gate::operate(std::vector<bool> argInputs) {
 
@@ -138,12 +124,11 @@ void Gate::connect(std::vector<Gate *> inputGatesToLink, std::vector<std::vector
         if (gate) {
             gate->attachedOutputGates.push_back(this);
         } else {
-            std::runtime_error("Null pointer in connect's outputGatesToLink parameter");
+            std::runtime_error("Null pointer in connect's inputGatesToLink parameter");
         }
         inputIndex++;
     }
 }
-
 
 circuit_pulse_status Gate::pulse(std::vector<bool> oversized_inputs, int startdex) {
     

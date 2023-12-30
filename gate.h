@@ -102,8 +102,19 @@ class Gate {
         // Will supply only necessary inputs and return the next index in oversized_inputs to be used
         circuit_pulse_status pulse(std::vector<bool> oversized_inputs, int startdex); 
 
+        // Connect input gates to the calling gate and forward link the calling gate as an output gate for those input gates.
+        // Inputs:
+        // // inputGatesToLink: vector of Gate pointers to attach as input gates.
+        // // attachmentIndicesList: list of output indices for each input gate to allow granularity of connections
+        // Outputs:
+        // // None
         void connect(std::vector<Gate *> inputGatesToLink, std::vector<std::vector<int>> attachmentIndicesList);
 
+        // Debug method to fetch most of the class member fields for printing
+        // Inputs:
+        // // None
+        // Outputs:
+        // // fields (all sent as integers)
         std::vector<int> debugGateFieldFetch() const {
             return std::vector<int> { this->totalInputs, this->directInputs, this->totalOutputs, (int) this->inputFlags.size(), (int) this->attachedInputInfo.size(), (int) this->attachedOutputGates.size(), (int) this->validPulse };
         }        

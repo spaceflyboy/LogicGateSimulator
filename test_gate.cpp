@@ -97,7 +97,7 @@ std::vector<bool> testGatePulses(int starting_test_index, int totalOutputs, std:
 void test() {
     std::vector<bool> test_successes;
 
-    // Test 0: AND_2_1 function
+    // Test 1: AND_2_1 function
     std::vector<std::vector<bool>> inputs_for_testing {
         std::vector<bool> {true, true},
         std::vector<bool> {true, false},
@@ -105,14 +105,13 @@ void test() {
         std::vector<bool> {false, false}
     };
 
-    int test_index = 0;
     int assertion_index = 0;
     try {
         for (std::vector<bool> input_set : inputs_for_testing) {
             std::vector<bool> outputs = AND_2_1(input_set);
             if (outputs[0] != (input_set[0] && input_set[1])) {
                 char *s = (char *)"";
-                sprintf(s, "Test assertion %d:%d failed", test_index, assertion_index);
+                sprintf(s, "Test assertion 1:%d failed", assertion_index);
                 throw std::runtime_error(s);
             }
             assertion_index++;
@@ -122,9 +121,8 @@ void test() {
         test_successes.push_back(false);
         std::cout << e.what();
     }
-    test_index++;
 
-    //Test 1: Gate Constructor
+    //Test 2: Gate Constructor
     try {
         Gate g = Gate(1, std::vector<bool> { true, true }, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
         test_successes.push_back(true);
@@ -132,9 +130,8 @@ void test() {
         test_successes.push_back(false);
         std::cout << e.what();
     }
-    test_index++;
 
-    // Tests 2-5: AND_2_1 GATE PULSE FULLY DIRECT INPUT TEST
+    // Tests 3-6: AND_2_1 GATE PULSE FULLY DIRECT INPUT TEST
     std::vector<std::vector<bool>> expectedOutputsList = 
     { 
         {true},
@@ -143,12 +140,54 @@ void test() {
         {false}
     };
 
-    auto res = testGatePulses(test_index, 1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1, inputs_for_testing, expectedOutputsList);
+    int testIndex = 3;
+    auto res = testGatePulses(testIndex, 1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1, inputs_for_testing, expectedOutputsList);
     for (bool result: res) {
         test_successes.push_back(result);
     }
-    
-    int i = 0;
+
+
+    // Test 7: AND_2_1 2 LAYER GATE PULSE WITH CONNECTIONS
+    Gate layer1 = Gate(1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
+    indirect_input_info layer2_info;
+    layer2_info.attachedInputGate = &layer1;
+    layer2_info.attachmentIndices = std::vector<int> {0};
+    Gate layer2 = Gate(1, std::vector<bool> {false, true}, std::vector<indirect_input_info> { layer2_info }, std::vector<Gate>(), &AND_2_1);
+
+    auto pSC = layer1.pulse(std::vector<bool> {true, true});
+
+    if (pSC == success) {
+        operation_output layer2_check = layer2.checkPulse();
+        if (layer2_check.success) {
+            give_test_fail_reason("Test 7 Failure: Second layer gate says it has a valid pulse but shouldn't have the requisite inputs.\n");
+            test_successes.push_back(false);
+        } else {
+            pSC = layer2.pulse(std::vector<bool> { true });
+            if (pSC == success) {
+                operation_output layer2_check = layer2.checkPulse();
+                if (layer2_check.success) {
+                    if (layer2_check.outputs.size() != 0 && layer2_check.outputs[0] == true) {
+                        test_successes.push_back(true);
+                    } else {
+                        give_test_fail_reason("Test 7 Failure: Second layer pulse succeeded and checkPulse() returned, but the output value is incorrect.\n");
+                        test_successes.push_back(false);
+                    }
+
+                } else {
+                    give_test_fail_reason("Test 7 Failure: Second layer checkPulse failed.\n");
+                    test_successes.push_back(false);
+                }
+            } else {
+                give_test_fail_reason("Test 7 Failure: Second layer pulse failed.\n");
+                test_successes.push_back(false);
+            }
+        }
+    } else {
+        give_test_fail_reason("Test 7 Failure: First layer pulse failed despite having everything it needs.\n");
+        test_successes.push_back(false);
+    }
+
+    int i = 1;
     for (bool test_success : test_successes) {
         if (test_success) {
             std::cout << "Test " + std::to_string(i) + " Succeeded!\n";

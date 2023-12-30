@@ -57,10 +57,6 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
 
 pulseStatusCode Gate::pulse(std::vector<bool> inputs) {
 
-    if (inputs.size() != this->directInputs) {
-        throw std::invalid_argument("Invalid argument: Pulse does not have the required number of inputs.");
-    }
-
     std::vector<bool> args = this->collectPulseInputs(inputs);
     if (args.size() == this->totalInputs) {
         operation_output operationResult = this->operate(args);
@@ -69,12 +65,11 @@ pulseStatusCode Gate::pulse(std::vector<bool> inputs) {
             this->validPulse = true;
             for (Gate outputGate : this->attachedOutputGates) {
                 std::vector<bool> emptyInputs;
-                outputGate.pulse(emptyInputs); // recurse (kind of)
-                // We don't care about the return code because partial pulsing is intended
-                // I.e. if it has direct inputs it shouldn't be pulsed until it is supplied with real inputs
-                // instead of emptyInputs
-            }
-            
+                auto pSC = outputGate.pulse(emptyInputs); // recurse (kind of)
+                if (pSC == operationFailure) {
+                    throw std::runtime_error("pulse received an operationFailure when forward chaining. Something is wrong.");
+                }
+            } 
             return success;
         } else {
             this->validPulse = false;
@@ -106,6 +101,7 @@ Gate::Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_
     
 
     this->attachedInputInfo = attachedInputInfo;
+    this->backwardLink(this->attachedInputInfo, true);
     this->inputFlags = inputFlags;
     this->validPulse = false;
     this->pulseOutputs = std::vector<bool>();

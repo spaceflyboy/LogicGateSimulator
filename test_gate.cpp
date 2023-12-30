@@ -187,6 +187,74 @@ void test() {
         test_successes.push_back(false);
     }
 
+    std::cout << "*** Test 8 Start\n";
+
+    // Test 8: Multi-layer, multi-input-gate collection of gates. Circuit pulse method test.
+    Gate inputGate1 = Gate(1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
+    Gate inputGate2 = Gate(1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
+    indirect_input_info layer2_info1;
+    indirect_input_info layer2_info2;
+    layer2_info1.attachedInputGate = &inputGate1;
+    layer2_info1.attachmentIndices = std::vector<int> {0};
+    layer2_info2.attachedInputGate = &inputGate2;
+    layer2_info2.attachmentIndices = std::vector<int> {0};
+    //Avoid redeclaration (layer2 name used)
+    layer2 = construct_and_link(1, std::vector<bool> {false, false}, std::vector<indirect_input_info> { layer2_info1, layer2_info2 }, std::vector<Gate>(), &AND_2_1);
+    //layer2 = Gate(1, std::vector<bool> {false, false}, std::vector<indirect_input_info> { layer2_info1, layer2_info2 }, std::vector<Gate>(), &AND_2_1);
+
+    std::vector<bool> oversizedInputs = {true, true, true, false};
+    int pulsedex = 0;
+    std::cout << "*** First Pulse\n";
+    circuit_pulse_status cPS = inputGate1.pulse(oversizedInputs, pulsedex);
+    operation_output inputGate1Pulse = inputGate1.checkPulse();
+    if (cPS.pulseStatus == success && inputGate1Pulse.success && inputGate1Pulse.outputs.size() == 1 && inputGate1Pulse.outputs[0] == true) {
+        std::cout << "*** Second Pulse\n";
+        cPS = inputGate2.pulse(oversizedInputs, cPS.nextIndex);
+        operation_output inputGate2Pulse = inputGate2.checkPulse();
+        if (cPS.pulseStatus == success && inputGate2Pulse.success && inputGate2Pulse.outputs.size() == 1 && inputGate2Pulse.outputs[0] == false) {
+            operation_output pulseOutput = layer2.checkPulse();
+            if (pulseOutput.success && pulseOutput.outputs.size() == 1 && pulseOutput.outputs[0] == false) {
+                test_successes.push_back(true);
+            } else {
+                test_successes.push_back(false);
+                if (pulseOutput.success) {
+                    give_test_fail_reason("Test 8 Failure: layer2.checkPulse() succeeded but gave the wrong value.\n");
+                } else {
+                    give_test_fail_reason("Test 8 Failure: layer2.checkPulse() returned failure.\n");
+
+                }
+            }
+        } else {
+            test_successes.push_back(false);
+            if (cPS.pulseStatus == success) {
+                if(inputGate2Pulse.success) {
+                    give_test_fail_reason("Test 8 Failure: inputGate2.checkPulse() succeeded but gave the wrong value.\n");
+
+                } else {
+                    give_test_fail_reason("Test 8 Failure: inputGate2.checkPulse did not succeed.\n");
+                }
+            } else {
+                give_test_fail_reason("Test 8 Failure: inputGate2.pulse() failed.\n");
+            }
+        }
+    } else {
+        test_successes.push_back(false);
+        if (cPS.pulseStatus == success) {
+            if(inputGate1Pulse.success) {
+                give_test_fail_reason("Test 8 Failure: inputGate1.checkPulse() succeeded but gave the wrong value.\n");
+
+            } else {
+                give_test_fail_reason("Test 8 Failure: inputGate1.checkPulse did not succeed.\n");
+
+            }
+        } else {
+            give_test_fail_reason("Test 8 Failure: inputGate1.pulse did not succeed.\n");
+        }
+    }
+
+
+
+    // RESULTS FORMATTING
     int i = 1;
     for (bool test_success : test_successes) {
         if (test_success) {
@@ -196,7 +264,7 @@ void test() {
         }
         i++;
     }
-}
+}   
 
 int main() {
     std::cout << "Fuck C++\n";

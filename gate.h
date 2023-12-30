@@ -26,16 +26,16 @@ typedef struct {
     Gate *attachedInputGate;
 } indirect_input_info;
 
-enum pulseStatusCode {
+enum pulse_status {
     success = 0,
     inputGateFailure = 1,
     operationFailure = 2
 };
 
 typedef struct {
-    pulseStatusCode pSC;
+    pulse_status pulseStatus;
     int nextIndex;
-} circuitPulseStatus;
+} circuit_pulse_status;
 
 // Type for gate operation function pointers. 
 // Gate operations should return an integer (0 for success)
@@ -92,7 +92,7 @@ class Gate {
         // // inputs: Vector of direct inputs
         // Outputs:
         // // None
-        pulseStatusCode pulse(std::vector<bool> inputs);
+        pulse_status pulse(std::vector<bool> inputs);
 
         // Get information about the validity and content of the stored pulse value for this gate
         // Inputs: None
@@ -102,7 +102,7 @@ class Gate {
 
         // Pulse wrapper for circuits to use. 
         // Will supply only necessary inputs and return the next index in oversized_inputs to be used
-        circuitPulseStatus pulse(std::vector<bool> oversized_inputs, int startdex); 
+        circuit_pulse_status pulse(std::vector<bool> oversized_inputs, int startdex); 
 };
 
 #endif

@@ -55,7 +55,7 @@ class Gate {
         std::vector<bool> inputFlags; // totalInputs-length vector of flags indicating direct inputs
         //TODO: Have constructor validate attachedInputInfo's indices
         std::vector<indirect_input_info> attachedInputInfo; // linkages to gates which supply indirect inputs
-        std::vector<Gate> attachedOutputGates; // linkages to gates which this gate supplies indirect inputs to
+        std::vector<Gate *> attachedOutputGates; // linkages to gates which this gate supplies indirect inputs to
         bool validPulse; // flag indicating whether the value in pulseOutput is valid
         std::vector<bool> pulseOutputs; // boolean output of the logic gate
         FunctionPointer operation; // Pointer to the operation performed by the logic gate 
@@ -83,11 +83,7 @@ class Gate {
         // // attachedInputGates: Vector of input gates which supply indirect inputs (backward links)
         // // forwardLinks: Vector of gates which take in this gate's output(s) as input
         // // operation: Function pointer representing the logic gate's actual operation. 
-        Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
-        
-        void forwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
-
-        void backwardLink(std::vector<indirect_input_info> info, bool replace_flag);
+        Gate(int totalOutputs, std::vector<bool> inputFlags, FunctionPointer operation);
         
         // Pulse the logic gate and perform the operation
         // Inputs:
@@ -106,8 +102,10 @@ class Gate {
         // Will supply only necessary inputs and return the next index in oversized_inputs to be used
         circuit_pulse_status pulse(std::vector<bool> oversized_inputs, int startdex); 
 
+        void connect(std::vector<Gate *> inputGatesToLink, std::vector<std::vector<int>> attachmentIndicesList);
+
         std::vector<int> debugGet() const {
-            return std::vector<int> { this->totalInputs, this->directInputs, this->totalOutputs, (int) this->inputFlags.size(), (int) this->attachedInputInfo.size(), (int) this->attachedOutputGates.size() };
+            return std::vector<int> { this->totalInputs, this->directInputs, this->totalOutputs, (int) this->inputFlags.size(), (int) this->attachedInputInfo.size(), (int) this->attachedOutputGates.size(), (int) this->validPulse };
         }        
 };
 

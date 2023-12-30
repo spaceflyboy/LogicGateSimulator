@@ -57,9 +57,9 @@ bool testGatePulse_GATEPARAM(int test_index, Gate g, std::vector<bool> directInp
     }
 }
 
-bool testGatePulse(int test_index, int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation, std::vector<bool> directInputs, std::vector<bool> expectedOutputs) {
+bool testGatePulse(int test_index, int totalOutputs, std::vector<bool> inputFlags, FunctionPointer operation, std::vector<bool> directInputs, std::vector<bool> expectedOutputs) {
     try {
-        Gate g = Gate(totalOutputs, inputFlags, attachedInputInfo, attachedOutputGates, &AND_2_1);
+        Gate g = Gate(totalOutputs, inputFlags, &AND_2_1);
         return testGatePulse_GATEPARAM(test_index, g, directInputs, expectedOutputs);
     } catch (std::runtime_error e) {
         std::cout << e.what();
@@ -83,10 +83,10 @@ std::vector<bool> testGatePulses_GATEPARAM(int test_index, Gate g, std::vector<s
     return testResults;
 }
 
-std::vector<bool> testGatePulses(int starting_test_index, int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation, std::vector<std::vector<bool>> directInputsList, std::vector<std::vector<bool>> expectedOutputsList) {
+std::vector<bool> testGatePulses(int starting_test_index, int totalOutputs, std::vector<bool> inputFlags, FunctionPointer operation, std::vector<std::vector<bool>> directInputsList, std::vector<std::vector<bool>> expectedOutputsList) {
     std::vector<bool> results;
     try {
-        Gate g = Gate(totalOutputs, inputFlags, attachedInputInfo, attachedOutputGates, operation);
+        Gate g = Gate(totalOutputs, inputFlags, operation);
         return testGatePulses_GATEPARAM(starting_test_index, g, directInputsList, expectedOutputsList);
     } catch (std::runtime_error e) {
         std::cout << e.what();
@@ -96,7 +96,6 @@ std::vector<bool> testGatePulses(int starting_test_index, int totalOutputs, std:
 
 void test() {
     std::vector<bool> test_successes;
-    /*
     // Test 1: AND_2_1 function
     std::vector<std::vector<bool>> inputs_for_testing {
         std::vector<bool> {true, true},
@@ -124,7 +123,7 @@ void test() {
 
     //Test 2: Gate Constructor
     try {
-        Gate g = Gate(1, std::vector<bool> { true, true }, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
+        Gate g = Gate(1, std::vector<bool> { true, true }, &AND_2_1);
         test_successes.push_back(true);
     } catch (std::invalid_argument e) {
         test_successes.push_back(false);
@@ -141,19 +140,15 @@ void test() {
     };
 
     int testIndex = 3;
-    auto res = testGatePulses(testIndex, 1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1, inputs_for_testing, expectedOutputsList);
+    auto res = testGatePulses(testIndex, 1, std::vector<bool> {true, true}, &AND_2_1, inputs_for_testing, expectedOutputsList);
     for (bool result: res) {
         test_successes.push_back(result);
     }
 
-
     // Test 7: AND_2_1 2 LAYER GATE PULSE WITH CONNECTIONS
-    Gate layer1 = Gate(1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
-    indirect_input_info layer2_info;
-    layer2_info.attachedInputGate = &layer1;
-    layer2_info.attachmentIndices = std::vector<int> {0};
-    Gate layer2 = Gate(1, std::vector<bool> {false, true}, std::vector<indirect_input_info> { layer2_info }, std::vector<Gate>(), &AND_2_1);
-
+    Gate layer1 = Gate(1, std::vector<bool> {true, true}, &AND_2_1);
+    Gate layer2 = Gate(1, std::vector<bool> {false, true}, &AND_2_1);
+    layer2.connect(std::vector<Gate *> {&layer1}, std::vector<std::vector<int>> {{0}});
     auto pSC = layer1.pulse(std::vector<bool> {true, true});
 
     if (pSC == success) {
@@ -186,41 +181,22 @@ void test() {
         give_test_fail_reason("Test 7 Failure: First layer pulse failed despite having everything it needs.\n");
         test_successes.push_back(false);
     }
-    */
-    std::cout << "*** Test 8 Start\n";
 
     // Test 8: Multi-layer, multi-input-gate collection of gates. Circuit pulse method test.
-    Gate inputGate1 = Gate(1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
-    Gate inputGate2 = Gate(1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
-    
-    std::cout << gate_to_string(inputGate1) + "\n";
-    std::cout << gate_to_string(inputGate2) + "\n";
-    
-    indirect_input_info layer2_info1;
-    indirect_input_info layer2_info2;
-    layer2_info1.attachedInputGate = &inputGate1;
-    layer2_info1.attachmentIndices = std::vector<int> {0};
-    layer2_info2.attachedInputGate = &inputGate2;
-    layer2_info2.attachmentIndices = std::vector<int> {0};
-    //Avoid redeclaration (layer2 name used)
-    auto layer2 = construct_and_link(1, std::vector<bool> {false, false}, std::vector<indirect_input_info> { layer2_info1, layer2_info2 }, std::vector<Gate>(), &AND_2_1);
-    //layer2 = Gate(1, std::vector<bool> {false, false}, std::vector<indirect_input_info> { layer2_info1, layer2_info2 }, std::vector<Gate>(), &AND_2_1);
+    Gate inputGate1 = Gate(1, std::vector<bool> {true, true}, &AND_2_1);
+    Gate inputGate2 = Gate(1, std::vector<bool> {true, true}, &AND_2_1);
+    layer2 = Gate(1, std::vector<bool> {false, false}, &AND_2_1);
+    layer2.connect(std::vector<Gate *> {&inputGate1, &inputGate2}, std::vector<std::vector<int>> {{0}, {0}});
 
     std::vector<bool> oversizedInputs = {true, true, true, false};
     int pulsedex = 0;
-    std::cout << "*** First Pulse\n";
     circuit_pulse_status cPS = inputGate1.pulse(oversizedInputs, pulsedex);
     operation_output inputGate1Pulse = inputGate1.checkPulse();
     if (cPS.pulseStatus == success && inputGate1Pulse.success && inputGate1Pulse.outputs.size() == 1 && inputGate1Pulse.outputs[0] == true) {
-        std::cout << "first pulse success\n";
-        std::cout << "*** Second Pulse\n";
         cPS = inputGate2.pulse(oversizedInputs, cPS.nextIndex);
         operation_output inputGate2Pulse = inputGate2.checkPulse();
         if (cPS.pulseStatus == success && inputGate2Pulse.success && inputGate2Pulse.outputs.size() == 1 && inputGate2Pulse.outputs[0] == false) {
-            std::cout << "second pulse success\n";
             operation_output pulseOutput = layer2.checkPulse();
-
-            std::cout << "layer2 pulseOutput = " + std::to_string(pulseOutput.success) + ", outputs.size() = " + std::to_string(pulseOutput.outputs.size()) + "\n";
 
             if (pulseOutput.success && pulseOutput.outputs.size() == 1 && pulseOutput.outputs[0] == false) {
                 test_successes.push_back(true);

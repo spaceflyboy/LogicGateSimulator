@@ -21,6 +21,8 @@ typedef struct  {
 
 class Gate; // Forward declaration to not upset compiler :)
 
+// Struct for specifying which outputs of an attached input gate
+// the gate being created is actually attached to
 typedef struct {
     std::vector<int> attachmentIndices;
     Gate *attachedInputGate;
@@ -42,11 +44,9 @@ typedef struct {
 // and take in a vector of booleans as arguments
 typedef std::vector<bool>(*FunctionPointer)(std::vector<bool>); 
 
-
 // Class representing a generic logic gate (arbitrary number of inputs)
 class Gate {
-    // Struct for specifying which outputs of an attached input gate
-    // the gate being created is actually attached to
+
 
     protected:
         int totalInputs; // Total number of inputs this gate takes
@@ -72,8 +72,6 @@ class Gate {
         // Outputs:
         // // Vector of collected outputs
         std::vector<bool> collectPulseInputs(std::vector<bool> inputs);
-
-
 
     public:
         // Constructor

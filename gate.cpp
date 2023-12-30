@@ -116,17 +116,24 @@ Gate::Gate(int totalOutputs, std::vector<bool> inputFlags, FunctionPointer opera
 void Gate::connect(std::vector<Gate *> inputGatesToLink, std::vector<std::vector<int>> attachmentIndicesList) {
     int inputIndex = 0;
     for (Gate * gate: inputGatesToLink) {
-        indirect_input_info info;
-        info.attachedInputGate = gate;
-        info.attachmentIndices = attachmentIndicesList[inputIndex];
-
-        this->attachedInputInfo.push_back(info);
-
         if (gate) {
             gate->attachedOutputGates.push_back(this);
         } else {
             std::runtime_error("Null pointer in connect's inputGatesToLink parameter");
         }
+
+        indirect_input_info info;
+        info.attachedInputGate = gate;
+        info.attachmentIndices = attachmentIndicesList[inputIndex];
+
+        for (int index : info.attachmentIndices) {
+            if (index + 1 > info.attachedInputGate->totalOutputs) {
+                throw std::invalid_argument("attachmentIndicesList contains one or more indices which exceed the size of the attachedInputGate's totalOutputs.");
+            }
+        }
+
+        this->attachedInputInfo.push_back(info);
+
         inputIndex++;
     }
 }

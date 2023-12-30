@@ -53,7 +53,6 @@ class Gate {
         int directInputs; // Number of inputs supplied directly (i.e. not by a different gate's pulse)
         int totalOutputs; // Total number outputs this gate has
         std::vector<bool> inputFlags; // totalInputs-length vector of flags indicating direct inputs
-        //TODO: Have constructor validate attachedInputInfo's indices
         std::vector<indirect_input_info> attachedInputInfo; // linkages to gates which supply indirect inputs
         std::vector<Gate *> attachedOutputGates; // linkages to gates which this gate supplies indirect inputs to
         bool validPulse; // flag indicating whether the value in pulseOutput is valid

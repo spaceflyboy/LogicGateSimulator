@@ -23,6 +23,11 @@ enum pulseStatusCode {
     operationFailure = 2
 };
 
+typedef struct {
+    pulseStatusCode pSC;
+    int nextIndex;
+} circuitPulseStatus;
+
 // Type for gate operation function pointers. 
 // Gate operations should return an integer (0 for success)
 // and take in a vector of booleans as arguments
@@ -52,12 +57,6 @@ class Gate {
         // // operation_output struct containing status code and output
         operation_output operate(std::vector<bool> argInputs);
 
-        // Get information about the validity and content of the stored pulse value for this gate
-        // Inputs: None
-        // Outputs: operation_output struct containing status code and output
-        // Note that this is a repurposing of the operation_output struct- "success" indicates validity.
-        operation_output checkPulse();
-
         // Helper function for pulse that orders and collects both direct and indirect inputs
         // Inputs: 
         // // inputs: Vector of direct inputs
@@ -65,12 +64,7 @@ class Gate {
         // // Vector of collected outputs
         std::vector<bool> collectPulseInputs(std::vector<bool> inputs);
 
-        // Pulse the logic gate and perform the operation
-        // Inputs:
-        // // inputs: Vector of direct inputs
-        // Outputs:
-        // // None
-        pulseStatusCode pulse(std::vector<bool> inputs);
+
 
     public:
         // Constructor
@@ -87,10 +81,22 @@ class Gate {
 
         void forwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
         
+        // Pulse the logic gate and perform the operation
+        // Inputs:
+        // // inputs: Vector of direct inputs
+        // Outputs:
+        // // None
+        pulseStatusCode pulse(std::vector<bool> inputs);
+
+        // Get information about the validity and content of the stored pulse value for this gate
+        // Inputs: None
+        // Outputs: operation_output struct containing status code and output
+        // Note that this is a repurposing of the operation_output struct- "success" indicates validity.
+        operation_output checkPulse();
 
         // Pulse wrapper for circuits to use. 
         // Will supply only necessary inputs and return the next index in oversized_inputs to be used
-        int pulse(std::vector<bool> oversized_inputs, int startdex); 
+        circuitPulseStatus pulse(std::vector<bool> oversized_inputs, int startdex); 
 };
 
 #endif

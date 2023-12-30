@@ -1,6 +1,8 @@
 #include "gate.h"
 #include <stdexcept>
 #include <iostream>
+#include <cassert>
+#include <string>
 
 operation_output Gate::operate(std::vector<bool> argInputs) {
     operation_output result;
@@ -58,8 +60,6 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
 // TODO:
 // This method shouldn't be void anymore, essentially. And the pulse wrapper will have to
 // return multiple values. May need another struct type. 
-// If I want to throw that invaild argument it should be up front and the condition
-// should be if the inputs parameter is a different length than this->directInputs
 
 pulseStatusCode Gate::pulse(std::vector<bool> inputs) {
 
@@ -72,6 +72,7 @@ pulseStatusCode Gate::pulse(std::vector<bool> inputs) {
         operation_output operationResult = this->operate(args);
         if (operationResult.success) {
             this->pulseOutputs = operationResult.outputs;
+            this->validPulse = true;
             for (Gate outputGate : this->attachedOutputGates) {
                 std::vector<bool> emptyInputs;
                 outputGate.pulse(emptyInputs); // recurse (kind of)
@@ -79,24 +80,19 @@ pulseStatusCode Gate::pulse(std::vector<bool> inputs) {
                 // I.e. if it has direct inputs it shouldn't be pulsed until it is supplied with real inputs
                 // instead of emptyInputs
             }
+            
             return success;
         } else {
+            this->validPulse = false;
             return operationFailure;
         }
     } else {
+        this->validPulse = false;
         return inputGateFailure;
     }
 }
 
 Gate::Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation) { 
-    if (totalInputs <= 0 || directInputs > totalInputs || directInputs < 0 || inputFlags.size() != totalInputs || ((directInputs != totalInputs) && attachedInputInfo.size() == 0)) {
-        throw std::invalid_argument("Invalid argument(s) for constructing a Gate object. "
-                                    "Total inputs must be a positive integer, direct inputs "
-                                    "must be an integer between 0 and total inputs, and input " 
-                                    "flags are required. Also check that if you have indirect "
-                                    "inputs, you are providing a pointer to the required indirect "
-                                    "input providing gates.");
-    }
     this->totalInputs = inputFlags.size();
     int cnt = 0;
     for (int i = 0; i < this->totalInputs; i++) {
@@ -105,6 +101,16 @@ Gate::Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_
         }
     }
     this->directInputs = cnt;
+    if (this->totalInputs <= 0 || this->directInputs > this->totalInputs || this->directInputs < 0 || inputFlags.size() != this->totalInputs || ((this->directInputs != this->totalInputs) && attachedInputInfo.size() == 0)) {
+        throw std::invalid_argument("Invalid argument(s) for constructing a Gate object. "
+                                    "Total inputs must be a positive integer, direct inputs "
+                                    "must be an integer between 0 and total inputs, and input " 
+                                    "flags are required. Also check that if you have indirect "
+                                    "inputs, you are providing a pointer to the required indirect "
+                                    "input providing gates.");
+    }
+    
+
     this->attachedInputInfo = attachedInputInfo;
     this->inputFlags = inputFlags;
     this->validPulse = false;
@@ -136,17 +142,15 @@ void Gate::forwardLink(std::vector<Gate> gatesToLink, bool replace_flag) {
 }
 
 
-int Gate::pulse(std::vector<bool> oversized_inputs, int startdex) {
+circuitPulseStatus Gate::pulse(std::vector<bool> oversized_inputs, int startdex) {
+    
     std::vector<bool> selected_inputs;
     for (int i = 0; i < this->directInputs; i++) {
         selected_inputs.push_back(oversized_inputs[startdex + i]);
     }
-    this->pulse(selected_inputs);
-    return startdex + this->directInputs;
-}
-
-int main() {
-
-    std::cout << "Fuck C++\n";
-    return 0;
+    
+    circuitPulseStatus cPS;
+    cPS.pSC = this->pulse(selected_inputs);
+    cPS.nextIndex = startdex + this->directInputs;
+    return cPS;
 }

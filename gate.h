@@ -110,6 +110,10 @@ class Gate {
         // // None
         void connect(std::vector<Gate *> inputGatesToLink, std::vector<std::vector<int>> attachmentIndicesList);
 
+        void clearInputConnections();
+
+        void clearOutputConnections();
+
         // Debug method to fetch most of the class member fields for printing
         // Inputs:
         // // None

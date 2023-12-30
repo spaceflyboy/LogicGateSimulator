@@ -1,8 +1,6 @@
 #include "gate.h"
 #include <stdexcept>
 #include <iostream>
-#include <cassert>
-#include <string>
 
 operation_output Gate::operate(std::vector<bool> argInputs) {
     operation_output result;
@@ -56,10 +54,6 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
 
     return args;
 }
-
-// TODO:
-// This method shouldn't be void anymore, essentially. And the pulse wrapper will have to
-// return multiple values. May need another struct type. 
 
 pulseStatusCode Gate::pulse(std::vector<bool> inputs) {
 

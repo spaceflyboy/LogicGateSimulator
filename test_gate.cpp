@@ -1,5 +1,6 @@
 #include "gate.cpp"
 #include <iostream>
+#include <string>
 
 std::vector<bool> AND_2_1(std::vector<bool> inputs) {
     if (inputs.size() != 2) {

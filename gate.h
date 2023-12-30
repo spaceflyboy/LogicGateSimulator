@@ -5,6 +5,12 @@
 // MAJOR TODO: Tweak pulse logic to allow for cyclic connections in boolean circuits.
 // This will complicate things but I think it should be supported. 
 
+// MAJOR TODO: Tweak all gate logic to allow parallelization of circuit pulse
+// This means I want to be able to call pulse() on every input gate in parallel and the circuit should still
+// finish pulsing.
+// The reason this is currently a problem is because pulse relies on indirect input via checkPulse on its preceeding gates. 
+// But this logic would probably have a race condition.
+
 #include <vector> // Necessary here because many of the methods and class members use/are vectors
 
 // Useful struct for simultaneously checking success and obtaining a value from some class methods

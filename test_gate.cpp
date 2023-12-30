@@ -158,7 +158,6 @@ void test() {
     }
 }
 
-
 int main() {
     std::cout << "Fuck C++\n";
     test();

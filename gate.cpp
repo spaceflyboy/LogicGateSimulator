@@ -1,10 +1,25 @@
 #include "gate.h"
 #include <stdexcept>
 #include <iostream>
+#include <string>
+
+std::string gate_to_string(const Gate& g) {
+    std::string s = "";
+    std::vector<int> gateFields = g.debugGet();
+    s += "G(" + std::to_string(gateFields[0]) + " totalInputs, "\
+    + std::to_string(gateFields[1]) + " directInputs, "\
+    + std::to_string(gateFields[2]) + " totalOutputs, "\
+    + std::to_string(gateFields[3]) + " inputFlags size, "\
+    + std::to_string(gateFields[4]) + " attachedInputInfo objects, "\
+    + std::to_string(gateFields[5]) + " attachedOutputGate objects)";
+    return s;
+}
 
 operation_output Gate::operate(std::vector<bool> argInputs) {
+
     operation_output result;
     std::vector<bool> outputs = this->operation(argInputs);
+
     if (outputs.size() != this->totalOutputs) {
         result.success = false;
         result.outputs = std::vector<bool>();
@@ -16,17 +31,17 @@ operation_output Gate::operate(std::vector<bool> argInputs) {
 }   
 
 operation_output Gate::checkPulse() {
+    std::cout << "*** checkPulseCalled: Gate = \n";
 
-    std::cout << "checkPulse DEBUG PRINT:\n";
-    std::cout << "this object has " + std::to_string(this->attachedInputInfo.size()) + " attached input gates\n";
-    std::cout << "this object has " + std::to_string(this->directInputs) + " direct inputs\n";
-    std::cout << "this object has " + std::to_string(this->attachedOutputGates.size()) + " attached output gates\n";
+    std::cout << "\t" + gate_to_string(*this) + "\n";
 
     operation_output result;
     if (this->validPulse) {
+        std::cout << "*** checkPulse success\n";
         result.success = true;
         result.outputs = this->pulseOutputs;
     } else {
+        std::cout << "*** checkPulse failure\n";
         result.success = false;
         result.outputs = std::vector<bool>();
     }
@@ -34,7 +49,9 @@ operation_output Gate::checkPulse() {
 }
 
 std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
-    std::cout << "collectPulseInputs: this->inputFlags has size " + std::to_string(this->inputFlags.size()) + "\n";
+
+    std::cout << "*** collecting pulse inputs\n";
+
     int inputsIndex = 0;
     int attachedInputGatesIndex = 0;
     std::vector<bool> args;
@@ -43,35 +60,33 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
             args.push_back(inputs[inputsIndex]);
             inputsIndex++;
         } else {
-            std::cout << "collectPulseInputs: indirect input processing\n";
             indirect_input_info inputInfo = this->attachedInputInfo[attachedInputGatesIndex];
             Gate inputGate = *inputInfo.attachedInputGate;
             
             operation_output pulseOutput = inputGate.checkPulse(); // Re-using struct for convenience
             if (pulseOutput.success) {
                 for (int outputIndex : inputInfo.attachmentIndices) {
-                    std::cout << "collectPulseInputs: successfully processed indirect input for gate at index " + std::to_string(attachedInputGatesIndex) + "\n";
                     args.push_back(pulseOutput.outputs[outputIndex]);
                 }
                 attachedInputGatesIndex++;
             } else {
-                std::cout << "collectPulseInputs got a failure for the input gate at index " + std::to_string(attachedInputGatesIndex) + "\n";
                 this->pulseOutputs = std::vector<bool>();
                 this->validPulse = false;
             }
         }
     }
 
+    std::cout << "*** finished collecting pulse inputs\n";
     return args;
 }
 
 pulse_status Gate::pulse(std::vector<bool> inputs) {
+    std::cout << "*** pulse called: Gate = \n";
 
-    std::cout << "pulse: this->inputFlags size = " + std::to_string(this->inputFlags.size()) + "\n";
+    using std::to_string;
+    std::cout << "\t" + gate_to_string(*this) + "\n";
 
     std::vector<bool> args = this->collectPulseInputs(inputs);
-
-    std::cout << "pulse: collected args is size = " + std::to_string(args.size()) + "\n";
 
     if (args.size() == this->totalInputs) {
         operation_output operationResult = this->operate(args);
@@ -82,18 +97,21 @@ pulse_status Gate::pulse(std::vector<bool> inputs) {
                 std::vector<bool> emptyInputs;
                 auto pSC = outputGate.pulse(emptyInputs); // recurse (kind of)
                 if (pSC == operationFailure) {
-                    throw std::runtime_error("pulse received an operationFailure when forward chaining. Something is wrong.");
+                    throw std::runtime_error("*** pulse received an operationFailure when forward chaining. Something is wrong.");
                 } else if(pSC == inputGateFailure) {
-                    std::cout << "Forward pulse input gate failure received!\n";
+                    std::cout << "*** pulse received an inputGateFailure in forward chaining\n";
                 }
-            } 
-            
+            }
+
+            std::cout << "*** pulse: success\n";
             return success;
         } else {
+            std::cout << "*** pulse: operation failure\n";
             this->validPulse = false;
             return operationFailure;
         }
     } else {
+        std::cout << "*** pulse: input gate failure\n";
         this->validPulse = false;
         return inputGateFailure;
     }
@@ -102,6 +120,11 @@ pulse_status Gate::pulse(std::vector<bool> inputs) {
 Gate construct_and_link(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation) { 
     Gate returnGate = Gate(totalOutputs, inputFlags, attachedInputInfo, attachedOutputGates, operation);
     returnGate.backwardLink(attachedInputInfo, true);
+
+    for (indirect_input_info info : attachedInputInfo) {
+        info.attachedInputGate->forwardLink(std::vector<Gate> {returnGate}, true);
+    }
+
     return returnGate;
 }
 
@@ -129,45 +152,28 @@ Gate::Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_
     this->operation = operation;
     this->attachedOutputGates = attachedOutputGates;
     this->totalOutputs = totalOutputs;
-
-    std::cout << "*** Gate Constructor:\n";
-    std::cout << "totalInputs = " + std::to_string(this->totalInputs) + "\n";
-    std::cout << "directInputs = " + std::to_string(this->directInputs) + "\n";
-    std::cout << "inputFlags size = " + std::to_string(inputFlags.size()) + "\n";
-    std::cout << "attachedInputInfo size = " + std::to_string(attachedInputInfo.size()) + "\n";
-    std::cout << "attachedOutputGates size = " + std::to_string(attachedOutputGates.size()) + "\n";
-
-
     this->attachedInputInfo = attachedInputInfo;
-
-    if (this->attachedInputInfo.size() != 0) {
-        std::cout << "this->attachedInputInfo.size() != 0\n";
-        for (auto info : this->attachedInputInfo) {
-            auto backwardLinkedOutputGates = info.attachedInputGate->attachedOutputGates;
-            for (auto outputGate : backwardLinkedOutputGates) {
-                std::cout << "\"self\" object has " + std::to_string(outputGate.inputFlags.size()) + " input flags\n";
-            }
-        }
-    }
-
 }
 
 
 void Gate::backwardLink(std::vector<indirect_input_info> info, bool replace_flag) {
-    for (indirect_input_info gate_info : info) {
-        if (!replace_flag) {
-            this->attachedInputInfo.push_back(gate_info);
-        }
-        gate_info.attachedInputGate->forwardLink(std::vector<Gate> { *this }, replace_flag);
-    }
     
     if (replace_flag) {
         this->attachedInputInfo = info;
+    } else {    
+        for (indirect_input_info gate_info : info) {
+            this->attachedInputInfo.push_back(gate_info);
+        }
     }
+    
 }
 
 void Gate::forwardLink(std::vector<Gate> gatesToLink, bool replace_flag) {
-    std::cout << "Forward Link Called * with " + std::to_string(gatesToLink.size()) + " gates and replace_flag = " + std::to_string(replace_flag) + "\n";
+
+    std::cout << "*** forwardLink called with " + std::to_string(gatesToLink.size()) + " gates to link for Gate = \n";
+    
+    std::cout << "\t" + gate_to_string(*this) + "\n";
+
     if (replace_flag || gatesToLink.size() == 0) {
         this->attachedOutputGates = gatesToLink;
     } else {

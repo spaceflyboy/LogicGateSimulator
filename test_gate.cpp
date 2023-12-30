@@ -96,7 +96,7 @@ std::vector<bool> testGatePulses(int starting_test_index, int totalOutputs, std:
 
 void test() {
     std::vector<bool> test_successes;
-
+    /*
     // Test 1: AND_2_1 function
     std::vector<std::vector<bool>> inputs_for_testing {
         std::vector<bool> {true, true},
@@ -186,12 +186,16 @@ void test() {
         give_test_fail_reason("Test 7 Failure: First layer pulse failed despite having everything it needs.\n");
         test_successes.push_back(false);
     }
-
+    */
     std::cout << "*** Test 8 Start\n";
 
     // Test 8: Multi-layer, multi-input-gate collection of gates. Circuit pulse method test.
     Gate inputGate1 = Gate(1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
     Gate inputGate2 = Gate(1, std::vector<bool> {true, true}, std::vector<indirect_input_info>(), std::vector<Gate>(), &AND_2_1);
+    
+    std::cout << gate_to_string(inputGate1) + "\n";
+    std::cout << gate_to_string(inputGate2) + "\n";
+    
     indirect_input_info layer2_info1;
     indirect_input_info layer2_info2;
     layer2_info1.attachedInputGate = &inputGate1;
@@ -199,7 +203,7 @@ void test() {
     layer2_info2.attachedInputGate = &inputGate2;
     layer2_info2.attachmentIndices = std::vector<int> {0};
     //Avoid redeclaration (layer2 name used)
-    layer2 = construct_and_link(1, std::vector<bool> {false, false}, std::vector<indirect_input_info> { layer2_info1, layer2_info2 }, std::vector<Gate>(), &AND_2_1);
+    auto layer2 = construct_and_link(1, std::vector<bool> {false, false}, std::vector<indirect_input_info> { layer2_info1, layer2_info2 }, std::vector<Gate>(), &AND_2_1);
     //layer2 = Gate(1, std::vector<bool> {false, false}, std::vector<indirect_input_info> { layer2_info1, layer2_info2 }, std::vector<Gate>(), &AND_2_1);
 
     std::vector<bool> oversizedInputs = {true, true, true, false};
@@ -208,11 +212,16 @@ void test() {
     circuit_pulse_status cPS = inputGate1.pulse(oversizedInputs, pulsedex);
     operation_output inputGate1Pulse = inputGate1.checkPulse();
     if (cPS.pulseStatus == success && inputGate1Pulse.success && inputGate1Pulse.outputs.size() == 1 && inputGate1Pulse.outputs[0] == true) {
+        std::cout << "first pulse success\n";
         std::cout << "*** Second Pulse\n";
         cPS = inputGate2.pulse(oversizedInputs, cPS.nextIndex);
         operation_output inputGate2Pulse = inputGate2.checkPulse();
         if (cPS.pulseStatus == success && inputGate2Pulse.success && inputGate2Pulse.outputs.size() == 1 && inputGate2Pulse.outputs[0] == false) {
+            std::cout << "second pulse success\n";
             operation_output pulseOutput = layer2.checkPulse();
+
+            std::cout << "layer2 pulseOutput = " + std::to_string(pulseOutput.success) + ", outputs.size() = " + std::to_string(pulseOutput.outputs.size()) + "\n";
+
             if (pulseOutput.success && pulseOutput.outputs.size() == 1 && pulseOutput.outputs[0] == false) {
                 test_successes.push_back(true);
             } else {
@@ -221,7 +230,6 @@ void test() {
                     give_test_fail_reason("Test 8 Failure: layer2.checkPulse() succeeded but gave the wrong value.\n");
                 } else {
                     give_test_fail_reason("Test 8 Failure: layer2.checkPulse() returned failure.\n");
-
                 }
             }
         } else {

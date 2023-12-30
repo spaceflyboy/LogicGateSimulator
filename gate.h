@@ -42,6 +42,7 @@ typedef struct {
 // and take in a vector of booleans as arguments
 typedef std::vector<bool>(*FunctionPointer)(std::vector<bool>); 
 
+
 // Class representing a generic logic gate (arbitrary number of inputs)
 class Gate {
     // Struct for specifying which outputs of an attached input gate
@@ -73,7 +74,6 @@ class Gate {
         // // Vector of collected outputs
         std::vector<bool> collectPulseInputs(std::vector<bool> inputs);
 
-        void forwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
 
 
     public:
@@ -85,6 +85,8 @@ class Gate {
         // // operation: Function pointer representing the logic gate's actual operation. 
         Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
         
+        void forwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
+
         void backwardLink(std::vector<indirect_input_info> info, bool replace_flag);
         
         // Pulse the logic gate and perform the operation
@@ -103,6 +105,10 @@ class Gate {
         // Pulse wrapper for circuits to use. 
         // Will supply only necessary inputs and return the next index in oversized_inputs to be used
         circuit_pulse_status pulse(std::vector<bool> oversized_inputs, int startdex); 
+
+        std::vector<int> debugGet() const {
+            return std::vector<int> { this->totalInputs, this->directInputs, this->totalOutputs, (int) this->inputFlags.size(), (int) this->attachedInputInfo.size(), (int) this->attachedOutputGates.size() };
+        }        
 };
 
 #endif

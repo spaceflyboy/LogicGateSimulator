@@ -122,12 +122,15 @@ Gate::Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_
 
 
 void Gate::backwardLink(std::vector<indirect_input_info> info, bool replace_flag) {
-    if (replace_flag || info.size() == 0) {
-        this->attachedInputInfo = info;
-    } else {
-        for (indirect_input_info gate_info : info) {
+    for (indirect_input_info gate_info : info) {
+        if (!replace_flag) {
             this->attachedInputInfo.push_back(gate_info);
         }
+        gate_info.attachedInputGate->forwardLink(std::vector<Gate> { *this }, replace_flag);
+    }
+    
+    if (replace_flag) {
+        this->attachedInputInfo = info;
     }
 }
 

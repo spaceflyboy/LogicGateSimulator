@@ -2,15 +2,18 @@
 #ifndef GATE_H
 #define GATE_H
 
+// MAJOR TODO: Tweak pulse logic to allow for cyclic connections in boolean circuits.
+// This will complicate things but I think it should be supported. 
 
 #include <vector> // Necessary here because many of the methods and class members use/are vectors
+
 // Useful struct for simultaneously checking success and obtaining a value from some class methods
 typedef struct  {
     bool success;
     std::vector<bool> outputs;
 } operation_output;
 
-class Gate;
+class Gate; // Forward declaration to not upset compiler :)
 
 typedef struct {
     std::vector<int> attachmentIndices;
@@ -64,6 +67,7 @@ class Gate {
         // // Vector of collected outputs
         std::vector<bool> collectPulseInputs(std::vector<bool> inputs);
 
+        void forwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
 
 
     public:
@@ -74,12 +78,8 @@ class Gate {
         // // forwardLinks: Vector of gates which take in this gate's output(s) as input
         // // operation: Function pointer representing the logic gate's actual operation. 
         Gate(int totalOutputs, std::vector<bool> inputFlags, std::vector<indirect_input_info> attachedInputInfo, std::vector<Gate> attachedOutputGates, FunctionPointer operation);
-
-        // TODO: Fix link methods with new connection specification info
         
         void backwardLink(std::vector<indirect_input_info> info, bool replace_flag);
-
-        void forwardLink(std::vector<Gate> gatesToLink, bool replace_flag);
         
         // Pulse the logic gate and perform the operation
         // Inputs:

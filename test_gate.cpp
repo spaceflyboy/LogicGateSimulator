@@ -14,7 +14,6 @@ std::vector<bool> AND_2_1(std::vector<bool> inputs) {
     }
 
     return std::vector<bool> { check };
-
 }
 
 void give_test_fail_reason(std::string msg) {

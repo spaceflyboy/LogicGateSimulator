@@ -2,11 +2,6 @@
 #ifndef GATE_H
 #define GATE_H
 
-#define DEBUG 0
-#if DEBUG == 0:
-    #include "utilities.cpp"
-#endif
-
 // MAJOR TODO: Tweak pulse logic to allow for cyclic connections in boolean circuits.
 // This will complicate things but I think it should be supported. 
 

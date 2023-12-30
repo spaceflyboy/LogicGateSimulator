@@ -1,6 +1,7 @@
 #include "gate.h"
 #include <stdexcept>
 #include <iostream>
+#include "utilities.cpp"
 
 operation_output Gate::operate(std::vector<bool> argInputs) {
 

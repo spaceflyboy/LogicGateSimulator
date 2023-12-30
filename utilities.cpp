@@ -1,5 +1,5 @@
 #include <string>
-#include <gate.h>
+#include "gate.h"
 
 std::string gate_to_string(const Gate& g) {
     std::string s = "";

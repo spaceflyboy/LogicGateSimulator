@@ -236,7 +236,85 @@ void test() {
         }
     }
 
+    // Test 9: clear method testing
+    inputGate1 = Gate(1, std::vector<bool> {true, true}, &AND_2_1);
+    inputGate2 = Gate(1, std::vector<bool> {true, true}, &AND_2_1);
+    layer2 = Gate(1, std::vector<bool> {false, false}, &AND_2_1);
+    layer2.connect(std::vector<Gate *> {&inputGate1, &inputGate2}, std::vector<std::vector<int>> {{0}, {0}});
+    // Avoid redeclaration (this test was copied from test 8)
+    oversizedInputs = {true, true, true, false};
+    pulsedex = 0;
+    cPS = inputGate1.pulse(oversizedInputs, pulsedex);
+    inputGate1Pulse = inputGate1.checkPulse();
+    if (cPS.pulseStatus == success && inputGate1Pulse.success && inputGate1Pulse.outputs.size() == 1 && inputGate1Pulse.outputs[0] == true) {
+        cPS = inputGate2.pulse(oversizedInputs, cPS.nextIndex);
+        operation_output inputGate2Pulse = inputGate2.checkPulse();
+        if (cPS.pulseStatus == success && inputGate2Pulse.success && inputGate2Pulse.outputs.size() == 1 && inputGate2Pulse.outputs[0] == false) {
+            operation_output pulseOutput = layer2.checkPulse();
 
+            if (pulseOutput.success && pulseOutput.outputs.size() == 1 && pulseOutput.outputs[0] == false) {
+                // Second part of test: clear connections and make sure that they are really cleared (pulse should succeed on input gates and fail on layer2)
+                inputGate1.clearOutputConnections();
+                inputGate2.clearOutputConnections();
+                layer2.clearInputConnections();
+                oversizedInputs = {true, true, true, true};
+                pulsedex = 0;
+                cPS = inputGate1.pulse(oversizedInputs, pulsedex);
+                inputGate1Pulse = inputGate1.checkPulse();
+                if (cPS.pulseStatus == success && inputGate1Pulse.success && inputGate1Pulse.outputs.size() == 1 && inputGate1Pulse.outputs[0] == true) {
+                    cPS = inputGate2.pulse(oversizedInputs, cPS.nextIndex);
+                    inputGate2Pulse = inputGate2.checkPulse();
+                    if (cPS.pulseStatus == success && inputGate2Pulse.success && inputGate2Pulse.outputs.size() == 1 && inputGate2Pulse.outputs[0] == true) {
+                        pulseOutput = layer2.checkPulse();
+                        if (!pulseOutput.success) {
+                            test_successes.push_back(true);
+                        } else {
+                            test_successes.push_back(false);
+                            give_test_fail_reason("Test 9 Part 2 Failure: layer2 successfully returned checkPulse() despite having its input gates severed.\n");
+                        }
+                    } else {
+                        test_successes.push_back(false);
+                        give_test_fail_reason("Test 9 Part 2 Failure: inputGate2 pulse failed.\n");
+                    }
+                } else {
+                    test_successes.push_back(false);
+                    give_test_fail_reason("Test 9 Part 2 Failure: inputGate1 pulse failed.\n");    
+                }
+            } else {
+                test_successes.push_back(false);
+                if (pulseOutput.success) {
+                    give_test_fail_reason("Test 9 Failure: layer2.checkPulse() succeeded but gave the wrong value.\n");
+                } else {
+                    give_test_fail_reason("Test 9 Failure: layer2.checkPulse() returned failure.\n");
+                }
+            }
+        } else {
+            test_successes.push_back(false);
+            if (cPS.pulseStatus == success) {
+                if(inputGate2Pulse.success) {
+                    give_test_fail_reason("Test 9 Failure: inputGate2.checkPulse() succeeded but gave the wrong value.\n");
+
+                } else {
+                    give_test_fail_reason("Test 9 Failure: inputGate2.checkPulse did not succeed.\n");
+                }
+            } else {
+                give_test_fail_reason("Test 9 Failure: inputGate2.pulse() failed.\n");
+            }
+        }
+    } else {
+        test_successes.push_back(false);
+        if (cPS.pulseStatus == success) {
+            if(inputGate1Pulse.success) {
+                give_test_fail_reason("Test 9 Failure: inputGate1.checkPulse() succeeded but gave the wrong value.\n");
+
+            } else {
+                give_test_fail_reason("Test 9 Failure: inputGate1.checkPulse did not succeed.\n");
+
+            }
+        } else {
+            give_test_fail_reason("Test 9 Failure: inputGate1.pulse did not succeed.\n");
+        }
+    }
 
     // RESULTS FORMATTING
     int i = 1;

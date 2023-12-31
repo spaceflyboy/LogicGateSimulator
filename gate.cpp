@@ -140,10 +140,12 @@ void Gate::connect(std::vector<Gate *> inputGatesToLink, std::vector<std::vector
 
 void Gate::clearInputConnections() {
     this->attachedInputInfo = std::vector<indirect_input_info>();
+    this->validPulse = false;
 }
 
 void Gate::clearOutputConnections() {
     this->attachedOutputGates = std::vector<Gate *>();
+    this->validPulse = false;
 }
 
 circuit_pulse_status Gate::pulse(std::vector<bool> oversized_inputs, int startdex) {

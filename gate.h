@@ -12,6 +12,7 @@
 // But this logic would probably have a race condition.
 
 #include <vector> // Necessary here because many of the methods and class members use/are vectors
+#include <atomic>
 
 // Useful struct for simultaneously checking success and obtaining a value from some class methods
 typedef struct  {
@@ -47,7 +48,6 @@ typedef std::vector<bool>(*FunctionPointer)(std::vector<bool>);
 // Class representing a generic logic gate (arbitrary number of inputs)
 class Gate {
 
-
     protected:
         int totalInputs; // Total number of inputs this gate takes
         int directInputs; // Number of inputs supplied directly (i.e. not by a different gate's pulse)
@@ -55,7 +55,7 @@ class Gate {
         std::vector<bool> inputFlags; // totalInputs-length vector of flags indicating direct inputs
         std::vector<indirect_input_info> attachedInputInfo; // linkages to gates which supply indirect inputs
         std::vector<Gate *> attachedOutputGates; // linkages to gates which this gate supplies indirect inputs to
-        bool validPulse; // flag indicating whether the value in pulseOutput is valid
+        std::atomic<bool> validPulse; // flag indicating whether the value in pulseOutput is valid
         std::vector<bool> pulseOutputs; // boolean output of the logic gate
         FunctionPointer operation; // Pointer to the operation performed by the logic gate 
 
@@ -74,6 +74,7 @@ class Gate {
         std::vector<bool> collectPulseInputs(std::vector<bool> inputs);
 
     public:
+
         // Constructor
         // Inputs:
         // // inputFlags: Vector of flags indicating which inputs (in order) are direct or indirect
@@ -82,6 +83,31 @@ class Gate {
         // // operation: Function pointer representing the logic gate's actual operation. 
         Gate(int totalOutputs, std::vector<bool> inputFlags, FunctionPointer operation);
         
+        Gate(const Gate& gate) {
+            this->totalInputs = gate.totalInputs;
+            this->directInputs = gate.directInputs;
+            this->totalOutputs = gate.totalOutputs;
+            this->inputFlags = gate.inputFlags;
+            this->attachedInputInfo = gate.attachedInputInfo;
+            this->attachedOutputGates = gate.attachedOutputGates;
+            this->validPulse = gate.validPulse.load();
+            this->pulseOutputs = gate.pulseOutputs;
+            this->operation = gate.operation;
+        }
+
+        Gate& operator=(const Gate& gate) {
+            this->totalInputs = gate.totalInputs;
+            this->directInputs = gate.directInputs;
+            this->totalOutputs = gate.totalOutputs;
+            this->inputFlags = gate.inputFlags;
+            this->attachedInputInfo = gate.attachedInputInfo;
+            this->attachedOutputGates = gate.attachedOutputGates;
+            this->validPulse = gate.validPulse.load();
+            this->pulseOutputs = gate.pulseOutputs;
+            this->operation = gate.operation;
+            return *this;
+        }
+
         // Pulse the logic gate and perform the operation
         // Inputs:
         // // inputs: Vector of direct inputs
@@ -94,6 +120,8 @@ class Gate {
         // Outputs: operation_output struct containing status code and output
         // Note that this is a repurposing of the operation_output struct- "success" indicates validity.
         operation_output checkPulse();
+
+        std::vector<bool> checkPulseBlocking();
 
         // Pulse wrapper for circuits to use. 
         // Will supply only necessary inputs and return the next index in oversized_inputs to be used

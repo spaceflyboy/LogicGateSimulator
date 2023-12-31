@@ -30,6 +30,12 @@ operation_output Gate::checkPulse() {
     return result;
 }
 
+std::vector<bool> Gate::checkPulseBlocking() {
+    while (!this->validPulse);
+
+    return this->pulseOutputs;
+}
+
 std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
     int inputsIndex = 0;
     int attachedInputGatesIndex = 0;
@@ -42,9 +48,9 @@ std::vector<bool> Gate::collectPulseInputs(std::vector<bool> inputs) {
             }
         } else {
             indirect_input_info inputInfo = this->attachedInputInfo[attachedInputGatesIndex];
-            Gate inputGate = *inputInfo.attachedInputGate;
+            Gate *inputGate = inputInfo.attachedInputGate;
             
-            operation_output pulseOutput = inputGate.checkPulse(); // Re-using struct for convenience
+            operation_output pulseOutput = inputGate->checkPulse(); // Re-using struct for convenience
             if (pulseOutput.success) {
                 for (int outputIndex : inputInfo.attachmentIndices) {
                     args.push_back(pulseOutput.outputs[outputIndex]);

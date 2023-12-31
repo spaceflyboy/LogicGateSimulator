@@ -242,17 +242,17 @@ void test() {
     layer2 = Gate(1, std::vector<bool> {false, false}, &AND_2_1);
     layer2.connect(std::vector<Gate *> {&inputGate1, &inputGate2}, std::vector<std::vector<int>> {{0}, {0}});
     // Avoid redeclaration (this test was copied from test 8)
-    oversizedInputs = {true, true, true, false};
+    oversizedInputs = {true, true, true, true};
     pulsedex = 0;
     cPS = inputGate1.pulse(oversizedInputs, pulsedex);
     inputGate1Pulse = inputGate1.checkPulse();
     if (cPS.pulseStatus == success && inputGate1Pulse.success && inputGate1Pulse.outputs.size() == 1 && inputGate1Pulse.outputs[0] == true) {
         cPS = inputGate2.pulse(oversizedInputs, cPS.nextIndex);
         operation_output inputGate2Pulse = inputGate2.checkPulse();
-        if (cPS.pulseStatus == success && inputGate2Pulse.success && inputGate2Pulse.outputs.size() == 1 && inputGate2Pulse.outputs[0] == false) {
+        if (cPS.pulseStatus == success && inputGate2Pulse.success && inputGate2Pulse.outputs.size() == 1 && inputGate2Pulse.outputs[0] == true) {
             operation_output pulseOutput = layer2.checkPulse();
 
-            if (pulseOutput.success && pulseOutput.outputs.size() == 1 && pulseOutput.outputs[0] == false) {
+            if (pulseOutput.success && pulseOutput.outputs.size() == 1 && pulseOutput.outputs[0] == true) {
                 // Second part of test: clear connections and make sure that they are really cleared (pulse should succeed on input gates and fail on layer2)
                 inputGate1.clearOutputConnections();
                 inputGate2.clearOutputConnections();
